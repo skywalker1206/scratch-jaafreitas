@@ -1,3 +1,4 @@
+import dataviewerImage from './dataviewer.png';
 import musicImage from './music.png';
 import penImage from './pen.png';
 import videoImage from './video-sensing.png';
@@ -8,6 +9,13 @@ import ev3Image from './ev3.png';
 import boostImage from './boost.png';
 
 export default [
+    {
+        name: 'Data Viewer',
+        extensionId: 'dataviewer',
+        iconURL: dataviewerImage,
+        description: 'Visualize your data',
+        featured: true
+    },
     {
         name: 'Music',
         extensionId: 'music',
