@@ -9,6 +9,7 @@ import Modal from '../../containers/modal.jsx';
 import Divider from '../divider/divider.jsx';
 import Filter from '../filter/filter.jsx';
 import TagButton from '../../containers/tag-button.jsx';
+import analytics from '../../lib/analytics';
 
 import styles from './library.css';
 
@@ -28,19 +29,27 @@ class LibraryComponent extends React.Component {
         super(props);
         bindAll(this, [
             'handleBlur',
+            'handleClose',
             'handleFilterChange',
             'handleFilterClear',
             'handleFocus',
             'handleMouseEnter',
             'handleMouseLeave',
             'handleSelect',
-            'handleTagClick'
+            'handleTagClick',
+            'setFilteredDataRef'
         ]);
         this.state = {
             selectedItem: null,
             filterQuery: '',
             selectedTag: ALL_TAG_TITLE.toLowerCase()
         };
+    }
+    componentDidUpdate (prevProps, prevState) {
+        if (prevState.filterQuery !== this.state.filterQuery ||
+            prevState.selectedTag !== this.state.selectedTag) {
+            this.scrollToTop();
+        }
     }
     handleBlur (id) {
         this.handleMouseLeave(id);
@@ -49,8 +58,12 @@ class LibraryComponent extends React.Component {
         this.handleMouseEnter(id);
     }
     handleSelect (id) {
-        this.props.onRequestClose();
+        this.handleClose();
         this.props.onItemSelected(this.getFilteredData()[id]);
+    }
+    handleClose () {
+        this.props.onRequestClose();
+        analytics.pageview(`/${this.props.id}/search?q=${this.state.filterQuery}`);
     }
     handleTagClick (tag) {
         this.setState({
@@ -92,13 +105,19 @@ class LibraryComponent extends React.Component {
                 .indexOf(this.state.selectedTag) !== -1
         ));
     }
+    scrollToTop () {
+        this.filteredDataRef.scrollTop = 0;
+    }
+    setFilteredDataRef (ref) {
+        this.filteredDataRef = ref;
+    }
     render () {
         return (
             <Modal
                 fullScreen
                 contentLabel={this.props.title}
                 id={this.props.id}
-                onRequestClose={this.props.onRequestClose}
+                onRequestClose={this.handleClose}
             >
                 {(this.props.filterable || this.props.tags) && (
                     <div className={styles.filterBar}>
@@ -141,6 +160,7 @@ class LibraryComponent extends React.Component {
                     className={classNames(styles.libraryScrollGrid, {
                         [styles.withFilterBar]: this.props.filterable || this.props.tags
                     })}
+                    ref={this.setFilteredDataRef}
                 >
                     {this.getFilteredData().map((dataItem, index) => {
                         const scratchURL = dataItem.md5 ?

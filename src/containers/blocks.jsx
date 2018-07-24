@@ -9,10 +9,13 @@ import VM from 'scratch-vm';
 
 import analytics from '../lib/analytics';
 import Prompt from './prompt.jsx';
+import ConnectionModal from './connection-modal.jsx';
 import BlocksComponent from '../components/blocks/blocks.jsx';
 import ExtensionLibrary from './extension-library.jsx';
+import extensionData from '../lib/libraries/extensions/index.jsx';
 import CustomProcedures from './custom-procedures.jsx';
 import errorBoundaryHOC from '../lib/error-boundary-hoc.jsx';
+import {STAGE_DISPLAY_SIZES} from '../lib/layout-constants';
 
 import {connect} from 'react-redux';
 import {updateToolbox} from '../reducers/toolbox';
@@ -37,6 +40,9 @@ class Blocks extends React.Component {
             'attachVM',
             'detachVM',
             'handleCategorySelected',
+            'handleConnectionModalStart',
+            'handleConnectionModalClose',
+            'handleStatusButtonUpdate',
             'handlePromptStart',
             'handlePromptCallback',
             'handlePromptClose',
@@ -51,12 +57,15 @@ class Blocks extends React.Component {
             'onVisualReport',
             'onWorkspaceUpdate',
             'onWorkspaceMetricsChange',
-            'setBlocks'
+            'setBlocks',
+            'setLocale'
         ]);
         this.ScratchBlocks.prompt = this.handlePromptStart;
+        this.ScratchBlocks.statusButtonCallback = this.handleConnectionModalStart;
         this.state = {
             workspaceMetrics: {},
-            prompt: null
+            prompt: null,
+            connectionModal: null
         };
         this.onTargetsUpdate = debounce(this.onTargetsUpdate, 100);
         this.toolboxUpdateQueue = [];
@@ -85,23 +94,31 @@ class Blocks extends React.Component {
         addFunctionListener(this.workspace, 'zoom', this.onWorkspaceMetricsChange);
 
         this.attachVM();
-        this.props.vm.setLocale(this.props.locale, this.props.messages);
+        // Only update blocks/vm locale when visible to avoid sizing issues
+        // If locale changes while not visible it will get handled in didUpdate
+        if (this.props.isVisible) {
+            this.setLocale();
+        }
 
         analytics.pageview('/editors/blocks');
     }
     shouldComponentUpdate (nextProps, nextState) {
         return (
             this.state.prompt !== nextState.prompt ||
+            this.state.connectionModal !== nextState.connectionModal ||
             this.props.isVisible !== nextProps.isVisible ||
             this.props.toolboxXML !== nextProps.toolboxXML ||
             this.props.extensionLibraryVisible !== nextProps.extensionLibraryVisible ||
             this.props.customProceduresVisible !== nextProps.customProceduresVisible ||
-            this.props.locale !== nextProps.locale
+            this.props.locale !== nextProps.locale ||
+            this.props.anyModalVisible !== nextProps.anyModalVisible ||
+            this.props.stageSize !== nextProps.stageSize
         );
     }
     componentDidUpdate (prevProps) {
-        if (prevProps.locale !== this.props.locale) {
-            this.props.vm.setLocale(this.props.locale, this.props.messages);
+        // If any modals are open, call hideChaff to close z-indexed field editors
+        if (this.props.anyModalVisible && !prevProps.anyModalVisible) {
+            this.ScratchBlocks.hideChaff();
         }
 
         if (prevProps.toolboxXML !== this.props.toolboxXML) {
@@ -112,13 +129,25 @@ class Blocks extends React.Component {
             }, 0);
         }
         if (this.props.isVisible === prevProps.isVisible) {
+            if (this.props.stageSize !== prevProps.stageSize) {
+                // force workspace to redraw for the new stage size
+                window.dispatchEvent(new Event('resize'));
+            }
             return;
         }
         // @todo hack to resize blockly manually in case resize happened while hidden
         // @todo hack to reload the workspace due to gui bug #413
         if (this.props.isVisible) { // Scripts tab
             this.workspace.setVisible(true);
-            this.props.vm.refreshWorkspace();
+            if (prevProps.locale !== this.props.locale || this.props.locale !== this.props.vm.getLocale()) {
+                // call setLocale if the locale has changed, or changed while the blocks were hidden.
+                // vm.getLocale() will be out of sync if locale was changed while not visible
+                this.setLocale();
+            } else {
+                this.props.vm.refreshWorkspace();
+                this.updateToolbox();
+            }
+
             window.dispatchEvent(new Event('resize'));
         } else {
             this.workspace.setVisible(false);
@@ -128,6 +157,17 @@ class Blocks extends React.Component {
         this.detachVM();
         this.workspace.dispose();
         clearTimeout(this.toolboxUpdateTimeout);
+    }
+
+    setLocale () {
+        this.workspace.getFlyout().setRecyclingEnabled(false);
+        this.ScratchBlocks.ScratchMsgs.setLocale(this.props.locale);
+        this.props.vm.setLocale(this.props.locale, this.props.messages)
+            .then(() => {
+                this.props.vm.refreshWorkspace();
+                this.updateToolbox();
+                this.workspace.getFlyout().setRecyclingEnabled(true);
+            });
     }
 
     updateToolbox () {
@@ -179,6 +219,8 @@ class Blocks extends React.Component {
         this.props.vm.addListener('targetsUpdate', this.onTargetsUpdate);
         this.props.vm.addListener('EXTENSION_ADDED', this.handleExtensionAdded);
         this.props.vm.addListener('BLOCKSINFO_UPDATE', this.handleBlocksInfoUpdate);
+        this.props.vm.addListener('PERIPHERAL_CONNECTED', this.handleStatusButtonUpdate);
+        this.props.vm.addListener('PERIPHERAL_ERROR', this.handleStatusButtonUpdate);
     }
     detachVM () {
         this.props.vm.removeListener('SCRIPT_GLOW_ON', this.onScriptGlowOn);
@@ -190,6 +232,8 @@ class Blocks extends React.Component {
         this.props.vm.removeListener('targetsUpdate', this.onTargetsUpdate);
         this.props.vm.removeListener('EXTENSION_ADDED', this.handleExtensionAdded);
         this.props.vm.removeListener('BLOCKSINFO_UPDATE', this.handleBlocksInfoUpdate);
+        this.props.vm.removeListener('PERIPHERAL_CONNECTED', this.handleStatusButtonUpdate);
+        this.props.vm.removeListener('PERIPHERAL_ERROR', this.handleStatusButtonUpdate);
     }
 
     updateToolboxBlockValue (id, value) {
@@ -286,6 +330,11 @@ class Blocks extends React.Component {
         this.handleExtensionAdded(blocksInfo);
     }
     handleCategorySelected (categoryId) {
+        const extension = extensionData.find(ext => ext.extensionId === categoryId);
+        if (extension && extension.launchDeviceConnectionFlow) {
+            this.handleConnectionModalStart(categoryId);
+        }
+
         this.withToolboxUpdates(() => {
             this.workspace.toolbox_.setSelectedCategoryById(categoryId);
         });
@@ -296,13 +345,39 @@ class Blocks extends React.Component {
     handlePromptStart (message, defaultValue, callback, optTitle, optVarType) {
         const p = {prompt: {callback, message, defaultValue}};
         p.prompt.title = optTitle ? optTitle :
-            this.ScratchBlocks.VARIABLE_MODAL_TITLE;
+            this.ScratchBlocks.Msg.VARIABLE_MODAL_TITLE;
+        p.prompt.varType = typeof optVarType === 'string' ?
+            optVarType : this.ScratchBlocks.SCALAR_VARIABLE_TYPE;
         p.prompt.showMoreOptions =
-            optVarType !== this.ScratchBlocks.BROADCAST_MESSAGE_VARIABLE_TYPE;
+            optVarType !== this.ScratchBlocks.BROADCAST_MESSAGE_VARIABLE_TYPE &&
+            p.prompt.title !== this.ScratchBlocks.Msg.RENAME_VARIABLE_MODAL_TITLE &&
+            p.prompt.title !== this.ScratchBlocks.Msg.RENAME_LIST_MODAL_TITLE;
         this.setState(p);
     }
-    handlePromptCallback (data) {
-        this.state.prompt.callback(data);
+    handleConnectionModalStart (extensionId) {
+        const extension = extensionData.find(ext => ext.extensionId === extensionId);
+        if (extension) {
+            this.setState({connectionModal: {
+                extensionId: extensionId,
+                deviceImage: extension.deviceImage,
+                smallDeviceImage: extension.smallDeviceImage,
+                name: extension.name,
+                connectingMessage: extension.connectingMessage,
+                helpLink: extension.helpLink
+            }});
+        }
+    }
+    handleConnectionModalClose () {
+        this.setState({connectionModal: null});
+    }
+    handleStatusButtonUpdate () {
+        this.ScratchBlocks.refreshStatusButtons(this.workspace);
+    }
+    handlePromptCallback (input, optionSelection) {
+        this.state.prompt.callback(
+            input,
+            this.props.vm.runtime.getAllVarNamesOfType(this.state.prompt.varType),
+            optionSelection);
         this.handlePromptClose();
     }
     handlePromptClose () {
@@ -317,9 +392,11 @@ class Blocks extends React.Component {
     render () {
         /* eslint-disable no-unused-vars */
         const {
+            anyModalVisible,
             customProceduresVisible,
             extensionLibraryVisible,
             options,
+            stageSize,
             vm,
             isVisible,
             onActivateColorPicker,
@@ -339,12 +416,26 @@ class Blocks extends React.Component {
                 />
                 {this.state.prompt ? (
                     <Prompt
+                        isStage={vm.runtime.getEditingTarget().isStage}
                         label={this.state.prompt.message}
                         placeholder={this.state.prompt.defaultValue}
                         showMoreOptions={this.state.prompt.showMoreOptions}
                         title={this.state.prompt.title}
                         onCancel={this.handlePromptClose}
                         onOk={this.handlePromptCallback}
+                    />
+                ) : null}
+                {this.state.connectionModal ? (
+                    <ConnectionModal
+                        connectingMessage={this.state.connectionModal.connectingMessage}
+                        deviceImage={this.state.connectionModal.deviceImage}
+                        extensionId={this.state.connectionModal.extensionId}
+                        helpLink={this.state.connectionModal.helpLink}
+                        name={this.state.connectionModal.name}
+                        smallDeviceImage={this.state.connectionModal.smallDeviceImage}
+                        vm={vm}
+                        onCancel={this.handleConnectionModalClose}
+                        onStatusButtonUpdate={this.handleStatusButtonUpdate}
                     />
                 ) : null}
                 {extensionLibraryVisible ? (
@@ -368,6 +459,7 @@ class Blocks extends React.Component {
 }
 
 Blocks.propTypes = {
+    anyModalVisible: PropTypes.bool,
     customProceduresVisible: PropTypes.bool,
     extensionLibraryVisible: PropTypes.bool,
     isVisible: PropTypes.bool,
@@ -399,6 +491,7 @@ Blocks.propTypes = {
         comments: PropTypes.bool,
         collapse: PropTypes.bool
     }),
+    stageSize: PropTypes.oneOf(Object.keys(STAGE_DISPLAY_SIZES)).isRequired,
     toolboxXML: PropTypes.string,
     updateToolboxState: PropTypes.func,
     vm: PropTypes.instanceOf(VM).isRequired
@@ -427,8 +520,9 @@ Blocks.defaultOptions = {
         fieldShadow: 'rgba(255, 255, 255, 0.3)',
         dragShadowOpacity: 0.6
     },
-    comments: false,
-    collapse: false
+    comments: true,
+    collapse: false,
+    sounds: false
 };
 
 Blocks.defaultProps = {
@@ -437,11 +531,15 @@ Blocks.defaultProps = {
 };
 
 const mapStateToProps = state => ({
-    extensionLibraryVisible: state.modals.extensionLibrary,
-    locale: state.intl.locale,
-    messages: state.intl.messages,
-    toolboxXML: state.toolbox.toolboxXML,
-    customProceduresVisible: state.customProcedures.active
+    anyModalVisible: (
+        Object.keys(state.scratchGui.modals).some(key => state.scratchGui.modals[key]) ||
+        state.scratchGui.mode.isFullScreen
+    ),
+    extensionLibraryVisible: state.scratchGui.modals.extensionLibrary,
+    locale: state.locales.locale,
+    messages: state.locales.messages,
+    toolboxXML: state.scratchGui.toolbox.toolboxXML,
+    customProceduresVisible: state.scratchGui.customProcedures.active
 });
 
 const mapDispatchToProps = dispatch => ({

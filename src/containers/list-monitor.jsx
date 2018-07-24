@@ -31,6 +31,11 @@ class ListMonitor extends React.Component {
     }
 
     handleActivate (index) {
+        // Do nothing if activating the currently active item
+        if (this.state.activeIndex === index) {
+            return;
+        }
+
         this.setState({
             activeIndex: index,
             activeValue: this.props.value[index]
@@ -67,7 +72,7 @@ class ListMonitor extends React.Component {
         else if (e.key === 'ArrowDown') navigateDirection = 1;
         if (navigateDirection) {
             this.handleDeactivate(); // Submit in-progress edits
-            const newIndex = (previouslyActiveIndex + navigateDirection) % this.props.value.length;
+            const newIndex = this.wrapListIndex(previouslyActiveIndex + navigateDirection, this.props.value.length);
             this.setState({
                 activeIndex: newIndex,
                 activeValue: this.props.value[newIndex]
@@ -82,7 +87,7 @@ class ListMonitor extends React.Component {
                 .concat([newListItemValue])
                 .concat(listValue.slice(previouslyActiveIndex + newValueOffset));
             setVariableValue(vm, targetId, variableId, newListValue);
-            const newIndex = (previouslyActiveIndex + newValueOffset) % newListValue.length;
+            const newIndex = this.wrapListIndex(previouslyActiveIndex + newValueOffset, newListValue.length);
             this.setState({
                 activeIndex: newIndex,
                 activeValue: newListItemValue
@@ -102,7 +107,11 @@ class ListMonitor extends React.Component {
         const newListValue = listValue.slice(0, this.state.activeIndex)
             .concat(listValue.slice(this.state.activeIndex + 1));
         setVariableValue(vm, targetId, variableId, newListValue);
-        this.handleActivate(Math.min(newListValue.length - 1, this.state.activeIndex));
+        const newActiveIndex = Math.min(newListValue.length - 1, this.state.activeIndex);
+        this.setState({
+            activeIndex: newActiveIndex,
+            activeValue: newListValue[newActiveIndex]
+        });
     }
 
     handleAdd () {
@@ -139,6 +148,11 @@ class ListMonitor extends React.Component {
         window.addEventListener('mouseup', onMouseUp);
 
     }
+
+    wrapListIndex (index, length) {
+        return (index + length) % length;
+    }
+
     render () {
         const {
             vm, // eslint-disable-line no-unused-vars
@@ -178,6 +192,6 @@ ListMonitor.propTypes = {
     y: PropTypes.number
 };
 
-const mapStateToProps = state => ({vm: state.vm});
+const mapStateToProps = state => ({vm: state.scratchGui.vm});
 
 export default connect(mapStateToProps)(ListMonitor);
