@@ -15,7 +15,7 @@ class SliderMonitor extends React.Component {
         ]);
 
         this.state = {
-            value: Number(props.value)
+            value: props.value
         };
     }
     componentWillReceiveProps (nextProps) {
@@ -54,6 +54,6 @@ SliderMonitor.propTypes = {
     vm: PropTypes.instanceOf(VM)
 };
 
-const mapStateToProps = state => ({vm: state.vm});
+const mapStateToProps = state => ({vm: state.scratchGui.vm});
 
 export default connect(mapStateToProps)(SliderMonitor);

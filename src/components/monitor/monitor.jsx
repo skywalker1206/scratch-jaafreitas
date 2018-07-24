@@ -1,4 +1,5 @@
 import React from 'react';
+import ReactDOM from 'react-dom';
 import PropTypes from 'prop-types';
 import Draggable from 'react-draggable';
 import {FormattedMessage} from 'react-intl';
@@ -30,6 +31,7 @@ const modes = {
 
 const MonitorComponent = props => (
     <ContextMenuTrigger
+        disable={!props.draggable}
         holdToDisplay={props.mode === 'slider' ? -1 : 1000}
         id={`monitor-${props.label}`}
     >
@@ -37,12 +39,13 @@ const MonitorComponent = props => (
             bounds=".monitor-overlay" // Class for monitor container
             cancel=".no-drag" // Class used for slider input to prevent drag
             defaultClassNameDragging={styles.dragging}
+            disabled={!props.draggable}
             onStop={props.onDragEnd}
         >
             <Box
                 className={styles.monitorContainer}
                 componentRef={props.componentRef}
-                onDoubleClick={props.mode === 'list' ? null : props.onNextMode}
+                onDoubleClick={props.mode === 'list' || !props.draggable ? null : props.onNextMode}
             >
                 {React.createElement(modes[props.mode], {
                     categoryColor: categories[props.category],
@@ -50,7 +53,11 @@ const MonitorComponent = props => (
                 })}
             </Box>
         </Draggable>
-        {props.mode === 'list' ? null : (
+        {props.mode === 'list' ? null : ReactDOM.createPortal((
+            // Use a portal to render the context menu outside the flow to avoid
+            // positioning conflicts between the monitors `transform: scale` and
+            // the context menus `position: fixed`. For more details, see
+            // http://meyerweb.com/eric/thoughts/2011/09/12/un-fixing-fixed-elements-with-css-transforms/
             <ContextMenu id={`monitor-${props.label}`}>
                 <MenuItem onClick={props.onSetModeToDefault}>
                     <FormattedMessage
@@ -76,7 +83,7 @@ const MonitorComponent = props => (
                     </MenuItem>
                 ) : null}
             </ContextMenu>
-        )}
+        ), document.body)}
     </ContextMenuTrigger>
 
 );
@@ -88,6 +95,7 @@ const monitorModes = Object.keys(modes);
 MonitorComponent.propTypes = {
     category: PropTypes.oneOf(Object.keys(categories)),
     componentRef: PropTypes.func.isRequired,
+    draggable: PropTypes.bool.isRequired,
     label: PropTypes.string.isRequired,
     mode: PropTypes.oneOf(monitorModes),
     onDragEnd: PropTypes.func.isRequired,
