@@ -28,7 +28,7 @@ export default [
         iconURL: dataviewerImage,
         description: (
             <FormattedMessage
-                defaultMessage="Visualize your data."
+                defaultMessage="Play with your data."
                 description="Description for the 'Data Viewer' extension"
                 id="gui.extension.dataviewer.description"
             />
