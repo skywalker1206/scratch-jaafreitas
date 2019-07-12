@@ -1,5 +1,6 @@
 import {FormattedMessage} from 'react-intl';
 import PropTypes from 'prop-types';
+import classNames from 'classnames';
 import React from 'react';
 
 import Box from '../box/box.jsx';
@@ -56,15 +57,16 @@ const UnavailableStep = props => (
         <Box className={styles.bottomArea}>
             <Dots
                 error
+                className={styles.bottomAreaItem}
                 total={3}
             />
-            <Box className={styles.buttonRow}>
+            <Box className={classNames(styles.bottomAreaItem, styles.buttonRow)}>
                 <button
                     className={styles.connectionButton}
                     onClick={props.onScanning}
                 >
                     <img
-                        className={styles.buttonIconLeft}
+                        className={classNames(styles.buttonIconLeft, styles.buttonIconBack)}
                         src={backIcon}
                     />
                     <FormattedMessage

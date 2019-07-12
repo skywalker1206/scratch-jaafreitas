@@ -6,6 +6,7 @@ import VM from 'scratch-vm';
 
 import AssetPanel from '../components/asset-panel/asset-panel.jsx';
 import soundIcon from '../components/asset-panel/icon--sound.svg';
+import soundIconRtl from '../components/asset-panel/icon--sound-rtl.svg';
 import addSoundFromLibraryIcon from '../components/asset-panel/icon--add-sound-lib.svg';
 import addSoundFromRecordingIcon from '../components/asset-panel/icon--add-sound-record.svg';
 import fileUploadIcon from '../components/action-menu/icon--file-upload.svg';
@@ -20,6 +21,7 @@ import soundLibraryContent from '../lib/libraries/sounds.json';
 import {handleFileUpload, soundUpload} from '../lib/file-uploader.js';
 import errorBoundaryHOC from '../lib/error-boundary-hoc.jsx';
 import DragConstants from '../lib/drag-constants';
+import downloadBlob from '../lib/download-blob';
 
 import {connect} from 'react-redux';
 
@@ -34,6 +36,9 @@ import {
     COSTUMES_TAB_INDEX
 } from '../reducers/editor-tab';
 
+import {setRestore} from '../reducers/restore-deletion';
+import {showStandardAlert, closeAlertWithId} from '../reducers/alerts';
+
 class SoundTab extends React.Component {
     constructor (props) {
         super(props);
@@ -41,6 +46,7 @@ class SoundTab extends React.Component {
             'handleSelectSound',
             'handleDeleteSound',
             'handleDuplicateSound',
+            'handleExportSound',
             'handleNewSound',
             'handleSurpriseSound',
             'handleFileUploadClick',
@@ -76,10 +82,17 @@ class SoundTab extends React.Component {
     }
 
     handleDeleteSound (soundIndex) {
-        this.props.vm.deleteSound(soundIndex);
+        const restoreFun = this.props.vm.deleteSound(soundIndex);
         if (soundIndex >= this.state.selectedSoundIndex) {
             this.setState({selectedSoundIndex: Math.max(0, soundIndex - 1)});
         }
+        this.props.dispatchUpdateRestore({restoreFun, deletedItem: 'Sound'});
+    }
+
+    handleExportSound (soundIndex) {
+        const item = this.props.vm.editingTarget.sprite.sounds[soundIndex];
+        const blob = new Blob([item.asset.data], {type: item.asset.assetType.contentType});
+        downloadBlob(`${item.name}.${item.asset.dataFormat}`, blob);
     }
 
     handleDuplicateSound (soundIndex) {
@@ -117,12 +130,18 @@ class SoundTab extends React.Component {
 
     handleSoundUpload (e) {
         const storage = this.props.vm.runtime.storage;
-        const handleSound = newSound => this.props.vm.addSound(newSound)
-            .then(() => this.handleNewSound());
-
-        handleFileUpload(e.target, (buffer, fileType, fileName) => {
-            soundUpload(buffer, fileType, fileName, storage, handleSound);
-        });
+        this.props.onShowImporting();
+        handleFileUpload(e.target, (buffer, fileType, fileName, fileIndex, fileCount) => {
+            soundUpload(buffer, fileType, storage, newSound => {
+                newSound.name = fileName;
+                this.props.vm.addSound(newSound).then(() => {
+                    this.handleNewSound();
+                    if (fileIndex === fileCount - 1) {
+                        this.props.onCloseImporting();
+                    }
+                });
+            });
+        }, this.props.onCloseImporting);
     }
 
     handleDrop (dropInfo) {
@@ -153,7 +172,9 @@ class SoundTab extends React.Component {
 
     render () {
         const {
+            dispatchUpdateRestore, // eslint-disable-line no-unused-vars
             intl,
+            isRtl,
             vm,
             onNewSoundFromLibraryClick,
             onNewSoundFromRecordingClick
@@ -167,7 +188,7 @@ class SoundTab extends React.Component {
 
         const sounds = sprite.sounds ? sprite.sounds.map(sound => (
             {
-                url: soundIcon,
+                url: isRtl ? soundIconRtl : soundIcon,
                 name: sound.name,
                 details: (sound.sampleCount / sound.rate).toFixed(2),
                 dragPayload: sound
@@ -209,7 +230,8 @@ class SoundTab extends React.Component {
                     onClick: this.handleFileUploadClick,
                     fileAccept: '.wav, .mp3',
                     fileChange: this.handleSoundUpload,
-                    fileInput: this.setFileInput
+                    fileInput: this.setFileInput,
+                    fileMultiple: true
                 }, {
                     title: intl.formatMessage(messages.surpriseSound),
                     img: surpriseIcon,
@@ -224,11 +246,13 @@ class SoundTab extends React.Component {
                     onClick: onNewSoundFromLibraryClick
                 }]}
                 dragType={DragConstants.SOUND}
+                isRtl={isRtl}
                 items={sounds}
                 selectedItemIndex={this.state.selectedSoundIndex}
                 onDeleteClick={this.handleDeleteSound}
                 onDrop={this.handleDrop}
                 onDuplicateClick={this.handleDuplicateSound}
+                onExportClick={this.handleExportSound}
                 onItemClick={this.handleSelectSound}
             >
                 {sprite.sounds && sprite.sounds[this.state.selectedSoundIndex] ? (
@@ -252,12 +276,16 @@ class SoundTab extends React.Component {
 }
 
 SoundTab.propTypes = {
+    dispatchUpdateRestore: PropTypes.func,
     editingTarget: PropTypes.string,
     intl: intlShape,
+    isRtl: PropTypes.bool,
     onActivateCostumesTab: PropTypes.func.isRequired,
+    onCloseImporting: PropTypes.func.isRequired,
     onNewSoundFromLibraryClick: PropTypes.func.isRequired,
     onNewSoundFromRecordingClick: PropTypes.func.isRequired,
     onRequestCloseSoundLibrary: PropTypes.func.isRequired,
+    onShowImporting: PropTypes.func.isRequired,
     soundLibraryVisible: PropTypes.bool,
     soundRecorderVisible: PropTypes.bool,
     sprites: PropTypes.shape({
@@ -277,6 +305,7 @@ SoundTab.propTypes = {
 
 const mapStateToProps = state => ({
     editingTarget: state.scratchGui.targets.editingTarget,
+    isRtl: state.locales.isRtl,
     sprites: state.scratchGui.targets.sprites,
     stage: state.scratchGui.targets.stage,
     soundLibraryVisible: state.scratchGui.modals.soundLibrary,
@@ -294,7 +323,12 @@ const mapDispatchToProps = dispatch => ({
     },
     onRequestCloseSoundLibrary: () => {
         dispatch(closeSoundLibrary());
-    }
+    },
+    dispatchUpdateRestore: restoreState => {
+        dispatch(setRestore(restoreState));
+    },
+    onCloseImporting: () => dispatch(closeAlertWithId('importingAsset')),
+    onShowImporting: () => dispatch(showStandardAlert('importingAsset'))
 });
 
 export default errorBoundaryHOC('Sound Tab')(

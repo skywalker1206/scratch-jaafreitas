@@ -5,16 +5,20 @@ import {connect} from 'react-redux';
 
 import {setHoveredSprite} from '../reducers/hovered-target';
 import {updateAssetDrag} from '../reducers/asset-drag';
+import storage from '../lib/storage';
+import VM from 'scratch-vm';
+import getCostumeUrl from '../lib/get-costume-url';
+import DragRecognizer from '../lib/drag-recognizer';
 import {getEventXY} from '../lib/touch-utils';
 
 import SpriteSelectorItemComponent from '../components/sprite-selector-item/sprite-selector-item.jsx';
 
-const dragThreshold = 3; // Same as the block drag threshold
-
-class SpriteSelectorItem extends React.Component {
+class SpriteSelectorItem extends React.PureComponent {
     constructor (props) {
         super(props);
         bindAll(this, [
+            'getCostumeData',
+            'setRef',
             'handleClick',
             'handleDelete',
             'handleDuplicate',
@@ -22,50 +26,63 @@ class SpriteSelectorItem extends React.Component {
             'handleMouseEnter',
             'handleMouseLeave',
             'handleMouseDown',
-            'handleMouseMove',
-            'handleMouseUp'
+            'handleDragEnd',
+            'handleDrag',
+            'handleTouchEnd'
         ]);
-    }
-    handleMouseUp () {
-        this.initialOffset = null;
-        window.removeEventListener('mouseup', this.handleMouseUp);
-        window.removeEventListener('mousemove', this.handleMouseMove);
-        window.removeEventListener('touchend', this.handleMouseUp);
-        window.removeEventListener('touchmove', this.handleMouseMove);
-        this.props.onDrag({
-            img: null,
-            currentOffset: null,
-            dragging: false,
-            dragType: null,
-            index: null
+
+        this.dragRecognizer = new DragRecognizer({
+            onDrag: this.handleDrag,
+            onDragEnd: this.handleDragEnd
         });
+    }
+    componentDidMount () {
+        document.addEventListener('touchend', this.handleTouchEnd);
+    }
+    componentWillUnmount () {
+        document.removeEventListener('touchend', this.handleTouchEnd);
+        this.dragRecognizer.reset();
+    }
+    getCostumeData () {
+        if (this.props.costumeURL) return this.props.costumeURL;
+        if (!this.props.asset) return null;
+
+        return getCostumeUrl(this.props.asset);
+    }
+    handleDragEnd () {
+        if (this.props.dragging) {
+            this.props.onDrag({
+                img: null,
+                currentOffset: null,
+                dragging: false,
+                dragType: null,
+                index: null
+            });
+        }
         setTimeout(() => {
             this.noClick = false;
         });
     }
-    handleMouseMove (e) {
-        const currentOffset = getEventXY(e);
-        const dx = currentOffset.x - this.initialOffset.x;
-        const dy = currentOffset.y - this.initialOffset.y;
-        if (Math.sqrt((dx * dx) + (dy * dy)) > dragThreshold) {
-            this.props.onDrag({
-                img: this.props.costumeURL,
-                currentOffset: currentOffset,
-                dragging: true,
-                dragType: this.props.dragType,
-                index: this.props.index,
-                payload: this.props.dragPayload
-            });
-            this.noClick = true;
+    handleDrag (currentOffset) {
+        this.props.onDrag({
+            img: this.getCostumeData(),
+            currentOffset: currentOffset,
+            dragging: true,
+            dragType: this.props.dragType,
+            index: this.props.index,
+            payload: this.props.dragPayload
+        });
+        this.noClick = true;
+    }
+    handleTouchEnd (e) {
+        const {x, y} = getEventXY(e);
+        const {top, left, bottom, right} = this.ref.getBoundingClientRect();
+        if (x >= left && x <= right && y >= top && y <= bottom) {
+            this.handleMouseEnter();
         }
-        e.preventDefault();
     }
     handleMouseDown (e) {
-        this.initialOffset = getEventXY(e);
-        window.addEventListener('mouseup', this.handleMouseUp);
-        window.addEventListener('mousemove', this.handleMouseMove);
-        window.addEventListener('touchend', this.handleMouseUp);
-        window.addEventListener('touchmove', this.handleMouseMove);
+        this.dragRecognizer.start(e);
     }
     handleClick (e) {
         e.preventDefault();
@@ -75,11 +92,7 @@ class SpriteSelectorItem extends React.Component {
     }
     handleDelete (e) {
         e.stopPropagation(); // To prevent from bubbling back to handleClick
-        // @todo add i18n here
-        // eslint-disable-next-line no-alert
-        if (window.confirm('Are you sure you want to delete this?')) {
-            this.props.onDeleteButtonClick(this.props.id);
-        }
+        this.props.onDeleteButtonClick(this.props.id);
     }
     handleDuplicate (e) {
         e.stopPropagation(); // To prevent from bubbling back to handleClick
@@ -95,10 +108,14 @@ class SpriteSelectorItem extends React.Component {
     handleMouseEnter () {
         this.props.dispatchSetHoveredSprite(this.props.id);
     }
+    setRef (component) {
+        // Access the DOM node using .elem because it is going through ContextMenuTrigger
+        this.ref = component && component.elem;
+    }
     render () {
         const {
             /* eslint-disable no-unused-vars */
-            assetId,
+            asset,
             id,
             index,
             onClick,
@@ -107,11 +124,16 @@ class SpriteSelectorItem extends React.Component {
             onExportButtonClick,
             dragPayload,
             receivedBlocks,
+            costumeURL,
+            vm,
             /* eslint-enable no-unused-vars */
             ...props
         } = this.props;
         return (
             <SpriteSelectorItemComponent
+                componentRef={this.setRef}
+                costumeURL={this.getCostumeData()}
+                preventContextMenu={this.dragRecognizer.gestureInProgress()}
                 onClick={this.handleClick}
                 onDeleteButtonClick={onDeleteButtonClick ? this.handleDelete : null}
                 onDuplicateButtonClick={onDuplicateButtonClick ? this.handleDuplicate : null}
@@ -126,14 +148,12 @@ class SpriteSelectorItem extends React.Component {
 }
 
 SpriteSelectorItem.propTypes = {
-    assetId: PropTypes.string,
+    asset: PropTypes.instanceOf(storage.Asset),
     costumeURL: PropTypes.string,
     dispatchSetHoveredSprite: PropTypes.func.isRequired,
-    dragPayload: PropTypes.shape({
-        name: PropTypes.string,
-        body: PropTypes.string
-    }),
+    dragPayload: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
     dragType: PropTypes.string,
+    dragging: PropTypes.bool,
     id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
     index: PropTypes.number,
     name: PropTypes.string,
@@ -143,14 +163,15 @@ SpriteSelectorItem.propTypes = {
     onDuplicateButtonClick: PropTypes.func,
     onExportButtonClick: PropTypes.func,
     receivedBlocks: PropTypes.bool.isRequired,
-    selected: PropTypes.bool
+    selected: PropTypes.bool,
+    vm: PropTypes.instanceOf(VM).isRequired
 };
 
-const mapStateToProps = (state, {assetId, costumeURL, id}) => ({
-    costumeURL: costumeURL || (assetId && state.scratchGui.vm.runtime.storage.get(assetId).encodeDataURI()),
+const mapStateToProps = (state, {id}) => ({
     dragging: state.scratchGui.assetDrag.dragging,
     receivedBlocks: state.scratchGui.hoveredTarget.receivedBlocks &&
-            state.scratchGui.hoveredTarget.sprite === id
+            state.scratchGui.hoveredTarget.sprite === id,
+    vm: state.scratchGui.vm
 });
 const mapDispatchToProps = dispatch => ({
     dispatchSetHoveredSprite: spriteId => {
@@ -159,7 +180,9 @@ const mapDispatchToProps = dispatch => ({
     onDrag: data => dispatch(updateAssetDrag(data))
 });
 
-export default connect(
+const ConnectedComponent = connect(
     mapStateToProps,
     mapDispatchToProps
 )(SpriteSelectorItem);
+
+export default ConnectedComponent;

@@ -4,19 +4,9 @@ import Box from '../box/box.jsx';
 import Monitor from '../../containers/monitor.jsx';
 import PropTypes from 'prop-types';
 import {OrderedMap} from 'immutable';
+import {stageSizeToTransform} from '../../lib/screen-utils';
 
 import styles from './monitor-list.css';
-
-const stageSizeToTransform = ({width, height, widthDefault, heightDefault}) => {
-    const scaleX = width / widthDefault;
-    const scaleY = height / heightDefault;
-    if (scaleX === 1 && scaleY === 1) {
-        // Do not set a transform if the scale is 1 because
-        // it messes up `position: fixed` elements like the context menu.
-        return;
-    }
-    return {transform: `scale(${scaleX},${scaleY})`};
-};
 
 const MonitorList = props => (
     <Box
@@ -37,6 +27,7 @@ const MonitorList = props => (
                         draggable={props.draggable}
                         height={monitorData.height}
                         id={monitorData.id}
+                        isDiscrete={monitorData.isDiscrete}
                         key={monitorData.id}
                         max={monitorData.sliderMax}
                         min={monitorData.sliderMin}

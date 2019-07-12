@@ -1,5 +1,6 @@
 import {FormattedMessage} from 'react-intl';
 import PropTypes from 'prop-types';
+import classNames from 'classnames';
 import React from 'react';
 
 import Box from '../box/box.jsx';
@@ -13,16 +14,16 @@ const ErrorStep = props => (
     <Box className={styles.body}>
         <Box className={styles.activityArea}>
             <Box className={styles.centeredRow}>
-                <div className={styles.deviceActivity}>
+                <div className={styles.peripheralActivity}>
                     <img
-                        className={styles.deviceActivityIcon}
-                        src={props.deviceImage}
+                        className={styles.peripheralActivityIcon}
+                        src={props.connectionIconURL}
                     />
                 </div>
             </Box>
         </Box>
         <Box className={styles.bottomArea}>
-            <div className={styles.instructions}>
+            <div className={classNames(styles.bottomAreaItem, styles.instructions)}>
                 <FormattedMessage
                     defaultMessage="Oops, looks like something went wrong."
                     description="The device connection process has encountered an error."
@@ -31,15 +32,16 @@ const ErrorStep = props => (
             </div>
             <Dots
                 error
+                className={styles.bottomAreaItem}
                 total={3}
             />
-            <Box className={styles.buttonRow}>
+            <Box className={classNames(styles.bottomAreaItem, styles.buttonRow)}>
                 <button
                     className={styles.connectionButton}
                     onClick={props.onScanning}
                 >
                     <img
-                        className={styles.buttonIconLeft}
+                        className={classNames(styles.buttonIconLeft, styles.buttonIconBack)}
                         src={backIcon}
                     />
                     <FormattedMessage
@@ -68,7 +70,7 @@ const ErrorStep = props => (
 );
 
 ErrorStep.propTypes = {
-    deviceImage: PropTypes.string.isRequired,
+    connectionIconURL: PropTypes.string.isRequired,
     onHelp: PropTypes.func,
     onScanning: PropTypes.func
 };

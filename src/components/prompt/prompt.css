@@ -10,9 +10,18 @@
     padding: 1.5rem 2.25rem;
 }
 
+.body input[type="checkbox"],
+.body input[type="radio"] {
+    margin: 3px;
+}
+
 .label {
     font-weight: 500;
     margin: 0 0 0.75rem;
+}
+
+.disabled-label {
+    opacity: 0.5;
 }
 
 .variable-name-text-input {
@@ -60,32 +69,24 @@
     color: white;
 }
 
-.button-row button + button {
+[dir="ltr"] .button-row button + button {
     margin-left: 0.5rem;
 }
 
-.more-options {
-    border-top: 1px dashed hsla(0, 0%, 0%, .25);
-    overflow: visible;
-    padding: 1rem;
-    text-align: center;
-    margin: 0 0 1rem;
+[dir="rtl"] .button-row button + button {
+    margin-right: 0.5rem;
 }
 
-.more-options-accordion {
-    width: 60%;
+.cloud-option {
+    display:flex;
+    border-top: 1px dashed hsla(0, 0%, 0%, .25);
+    overflow: visible;
+    padding: 1rem 0;
+    text-align: center;
+    width: 100%;
     margin: 0 auto;
 }
 
-.more-options-text {
-    opacity: .5;
-}
-
-.more-options-icon {
-    width: .75rem;
-    height: .75rem;
-    margin-left: .5rem;
-    vertical-align: middle;
-    padding-bottom: .2rem;
+.cloud-option-text {
     opacity: .5;
 }

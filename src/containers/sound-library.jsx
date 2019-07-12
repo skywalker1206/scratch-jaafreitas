@@ -5,13 +5,15 @@ import {defineMessages, injectIntl, intlShape} from 'react-intl';
 import VM from 'scratch-vm';
 import AudioEngine from 'scratch-audio';
 
-import analytics from '../lib/analytics';
 import LibraryComponent from '../components/library/library.jsx';
 
 import soundIcon from '../components/asset-panel/icon--sound.svg';
+import soundIconRtl from '../components/asset-panel/icon--sound-rtl.svg';
 
 import soundLibraryContent from '../lib/libraries/sounds.json';
 import soundTags from '../lib/libraries/sound-tags';
+
+import {connect} from 'react-redux';
 
 const messages = defineMessages({
     libraryTitle: {
@@ -122,11 +124,6 @@ class SoundLibrary extends React.PureComponent {
         this.props.vm.addSound(vmSound).then(() => {
             this.props.onNewSound();
         });
-        analytics.event({
-            category: 'library',
-            action: 'Select Sound',
-            label: soundItem.name
-        });
     }
     render () {
         // @todo need to use this hack to avoid library using md5 for image
@@ -137,7 +134,7 @@ class SoundLibrary extends React.PureComponent {
             } = sound;
             return {
                 _md5: md5,
-                rawURL: soundIcon,
+                rawURL: this.props.isRtl ? soundIconRtl : soundIcon,
                 ...otherData
             };
         });
@@ -159,9 +156,19 @@ class SoundLibrary extends React.PureComponent {
 
 SoundLibrary.propTypes = {
     intl: intlShape.isRequired,
+    isRtl: PropTypes.bool,
     onNewSound: PropTypes.func.isRequired,
     onRequestClose: PropTypes.func,
     vm: PropTypes.instanceOf(VM).isRequired
 };
 
-export default injectIntl(SoundLibrary);
+const mapStateToProps = state => ({
+    isRtl: state.locales.isRtl
+});
+
+const mapDispatchToProps = () => ({});
+
+export default injectIntl(connect(
+    mapStateToProps,
+    mapDispatchToProps
+)(SoundLibrary));

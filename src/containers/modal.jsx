@@ -1,6 +1,7 @@
 import bindAll from 'lodash.bindall';
 import PropTypes from 'prop-types';
 import React from 'react';
+import {connect} from 'react-redux';
 
 import ModalComponent from '../components/modal/modal.jsx';
 
@@ -18,7 +19,7 @@ class Modal extends React.Component {
     componentDidMount () {
         // Add a history event only if it's not currently for our modal. This
         // avoids polluting the history with many entries. We only need one.
-        this.pushHistory(this.id, history.state === null);
+        this.pushHistory(this.id, (history.state === null || history.state !== this.id));
     }
     componentWillUnmount () {
         this.removeEventListeners();
@@ -47,8 +48,15 @@ class Modal extends React.Component {
 
 Modal.propTypes = {
     id: PropTypes.string.isRequired,
+    isRtl: PropTypes.bool,
     onRequestClose: PropTypes.func,
     onRequestOpen: PropTypes.func
 };
 
-export default Modal;
+const mapStateToProps = state => ({
+    isRtl: state.locales.isRtl
+});
+
+export default connect(
+    mapStateToProps
+)(Modal);

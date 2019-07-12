@@ -2,11 +2,10 @@ import classNames from 'classnames';
 import PropTypes from 'prop-types';
 import React from 'react';
 
-import CostumeCanvas from '../costume-canvas/costume-canvas.jsx';
 import CloseButton from '../close-button/close-button.jsx';
 import styles from './sprite-selector-item.css';
 import {ContextMenuTrigger} from 'react-contextmenu';
-import {ContextMenu, MenuItem} from '../context-menu/context-menu.jsx';
+import {DangerousMenuItem, ContextMenu, MenuItem} from '../context-menu/context-menu.jsx';
 import {FormattedMessage} from 'react-intl';
 
 // react-contextmenu requires unique id to match trigger and context menu
@@ -24,26 +23,23 @@ const SpriteSelectorItem = props => (
             onMouseDown: props.onMouseDown,
             onTouchStart: props.onMouseDown
         }}
-        disable={props.dragging}
+        disable={props.preventContextMenu}
         id={`${props.name}-${contextMenuId}`}
+        ref={props.componentRef}
     >
-        {(props.selected && props.onDeleteButtonClick) ? (
-            <CloseButton
-                className={styles.deleteButton}
-                size={CloseButton.SIZE_SMALL}
-                onClick={props.onDeleteButtonClick}
-            />
-        ) : null }
         {typeof props.number === 'undefined' ? null : (
             <div className={styles.number}>{props.number}</div>
         )}
         {props.costumeURL ? (
-            <CostumeCanvas
-                className={styles.spriteImage}
-                height={32}
-                url={props.costumeURL}
-                width={32}
-            />
+            <div className={styles.spriteImageOuter}>
+                <div className={styles.spriteImageInner}>
+                    <img
+                        className={styles.spriteImage}
+                        draggable={false}
+                        src={props.costumeURL}
+                    />
+                </div>
+            </div>
         ) : null}
         <div className={styles.spriteInfo}>
             <div className={styles.spriteName}>{props.name}</div>
@@ -51,6 +47,13 @@ const SpriteSelectorItem = props => (
                 <div className={styles.spriteDetails}>{props.details}</div>
             ) : null}
         </div>
+        {(props.selected && props.onDeleteButtonClick) ? (
+            <CloseButton
+                className={styles.deleteButton}
+                size={CloseButton.SIZE_SMALL}
+                onClick={props.onDeleteButtonClick}
+            />
+        ) : null }
         {props.onDuplicateButtonClick || props.onDeleteButtonClick || props.onExportButtonClick ? (
             <ContextMenu id={`${props.name}-${contextMenuId++}`}>
                 {props.onDuplicateButtonClick ? (
@@ -62,15 +65,6 @@ const SpriteSelectorItem = props => (
                         />
                     </MenuItem>
                 ) : null}
-                {props.onDeleteButtonClick ? (
-                    <MenuItem onClick={props.onDeleteButtonClick}>
-                        <FormattedMessage
-                            defaultMessage="delete"
-                            description="Menu item to delete in the right click menu"
-                            id="gui.spriteSelectorItem.contextMenuDelete"
-                        />
-                    </MenuItem>
-                ) : null }
                 {props.onExportButtonClick ? (
                     <MenuItem onClick={props.onExportButtonClick}>
                         <FormattedMessage
@@ -80,6 +74,15 @@ const SpriteSelectorItem = props => (
                         />
                     </MenuItem>
                 ) : null }
+                {props.onDeleteButtonClick ? (
+                    <DangerousMenuItem onClick={props.onDeleteButtonClick}>
+                        <FormattedMessage
+                            defaultMessage="delete"
+                            description="Menu item to delete in the right click menu"
+                            id="gui.spriteSelectorItem.contextMenuDelete"
+                        />
+                    </DangerousMenuItem>
+                ) : null }
             </ContextMenu>
         ) : null}
     </ContextMenuTrigger>
@@ -87,9 +90,9 @@ const SpriteSelectorItem = props => (
 
 SpriteSelectorItem.propTypes = {
     className: PropTypes.string,
+    componentRef: PropTypes.func,
     costumeURL: PropTypes.string,
     details: PropTypes.string,
-    dragging: PropTypes.bool,
     name: PropTypes.string.isRequired,
     number: PropTypes.number,
     onClick: PropTypes.func,
@@ -99,6 +102,7 @@ SpriteSelectorItem.propTypes = {
     onMouseDown: PropTypes.func,
     onMouseEnter: PropTypes.func,
     onMouseLeave: PropTypes.func,
+    preventContextMenu: PropTypes.bool,
     selected: PropTypes.bool.isRequired
 };
 

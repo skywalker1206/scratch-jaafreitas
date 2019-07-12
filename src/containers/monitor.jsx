@@ -1,12 +1,19 @@
 import bindAll from 'lodash.bindall';
 import React from 'react';
 import PropTypes from 'prop-types';
+import {injectIntl, intlShape, defineMessages} from 'react-intl';
 
 import monitorAdapter from '../lib/monitor-adapter.js';
 import MonitorComponent, {monitorModes} from '../components/monitor/monitor.jsx';
 import {addMonitorRect, getInitialPosition, resizeMonitorRect, removeMonitorRect} from '../reducers/monitor-layout';
+import {getVariable, setVariableValue} from '../lib/variable-utils';
+import importCSV from '../lib/import-csv';
+import downloadBlob from '../lib/download-blob';
+import SliderPrompt from './slider-prompt.jsx';
 
 import {connect} from 'react-redux';
+import {Map} from 'immutable';
+import VM from 'scratch-vm';
 
 const availableModes = opcode => (
     monitorModes.filter(t => {
@@ -19,6 +26,14 @@ const availableModes = opcode => (
     })
 );
 
+const messages = defineMessages({
+    columnPrompt: {
+        defaultMessage: 'Which column should be used (1-{numberOfColumns})?',
+        description: 'Prompt for which column should be used',
+        id: 'gui.monitors.importListColumnPrompt'
+    }
+});
+
 class Monitor extends React.Component {
     constructor (props) {
         super(props);
@@ -28,18 +43,27 @@ class Monitor extends React.Component {
             'handleSetModeToDefault',
             'handleSetModeToLarge',
             'handleSetModeToSlider',
+            'handleSliderPromptClose',
+            'handleSliderPromptOk',
+            'handleSliderPromptOpen',
+            'handleImport',
+            'handleExport',
             'setElement'
         ]);
-
-        // @todo consume from VM, but need to store until there are APIs to update vm
         this.state = {
-            mode: props.mode || 'default'
+            sliderPrompt: false
         };
     }
     componentDidMount () {
         let rect;
+
+        const isNum = num => typeof num === 'number' && !isNaN(num);
+
         // Load the VM provided position if not loaded already
-        if (this.props.x && this.props.y && !this.props.monitorLayout.savedMonitorPositions[this.props.id]) {
+        // If a monitor has numbers for the x and y positions, load the saved position.
+        // Otherwise, auto-position the monitor.
+        if (isNum(this.props.x) && isNum(this.props.y) &&
+            !this.props.monitorLayout.savedMonitorPositions[this.props.id]) {
             rect = {
                 upperStart: {x: this.props.x, y: this.props.y},
                 lowerEnd: {x: this.props.x + this.element.offsetWidth, y: this.props.y + this.element.offsetHeight}
@@ -49,6 +73,11 @@ class Monitor extends React.Component {
             rect = getInitialPosition(
                 this.props.monitorLayout, this.props.id, this.element.offsetWidth, this.element.offsetHeight);
             this.props.addMonitorRect(this.props.id, rect);
+            this.props.vm.runtime.requestUpdateMonitor(Map({
+                id: this.props.id,
+                x: rect.upperStart.x,
+                y: rect.upperStart.y
+            }));
         }
         this.element.style.top = `${rect.upperStart.y}px`;
         this.element.style.left = `${rect.upperStart.x}px`;
@@ -73,49 +102,121 @@ class Monitor extends React.Component {
         this.props.removeMonitorRect(this.props.id);
     }
     handleDragEnd (e, {x, y}) {
+        const newX = parseInt(this.element.style.left, 10) + x;
+        const newY = parseInt(this.element.style.top, 10) + y;
         this.props.onDragEnd(
             this.props.id,
-            parseInt(this.element.style.left, 10) + x,
-            parseInt(this.element.style.top, 10) + y
+            newX,
+            newY
         );
+        this.props.vm.runtime.requestUpdateMonitor(Map({
+            id: this.props.id,
+            x: newX,
+            y: newY
+        }));
     }
     handleNextMode () {
         const modes = availableModes(this.props.opcode);
-        const modeIndex = modes.indexOf(this.state.mode);
-        this.setState({mode: modes[(modeIndex + 1) % modes.length]});
+        const modeIndex = modes.indexOf(this.props.mode);
+        const newMode = modes[(modeIndex + 1) % modes.length];
+        this.props.vm.runtime.requestUpdateMonitor(Map({
+            id: this.props.id,
+            mode: newMode
+        }));
     }
     handleSetModeToDefault () {
-        this.setState({mode: 'default'});
+        this.props.vm.runtime.requestUpdateMonitor(Map({
+            id: this.props.id,
+            mode: 'default'
+        }));
     }
     handleSetModeToLarge () {
-        this.setState({mode: 'large'});
+        this.props.vm.runtime.requestUpdateMonitor(Map({
+            id: this.props.id,
+            mode: 'large'
+        }));
     }
     handleSetModeToSlider () {
-        this.setState({mode: 'slider'});
+        this.props.vm.runtime.requestUpdateMonitor(Map({
+            id: this.props.id,
+            mode: 'slider'
+        }));
+    }
+    handleSliderPromptClose () {
+        this.setState({sliderPrompt: false});
+    }
+    handleSliderPromptOpen () {
+        this.setState({sliderPrompt: true});
+    }
+    handleSliderPromptOk (min, max, isDiscrete) {
+        const realMin = Math.min(min, max);
+        const realMax = Math.max(min, max);
+        this.props.vm.runtime.requestUpdateMonitor(Map({
+            id: this.props.id,
+            sliderMin: realMin,
+            sliderMax: realMax,
+            isDiscrete: isDiscrete
+        }));
+        this.handleSliderPromptClose();
     }
     setElement (monitorElt) {
         this.element = monitorElt;
     }
+    handleImport () {
+        importCSV().then(rows => {
+            const numberOfColumns = rows[0].length;
+            let columnNumber = 1;
+            if (numberOfColumns > 1) {
+                const msg = this.props.intl.formatMessage(messages.columnPrompt, {numberOfColumns});
+                columnNumber = parseInt(prompt(msg), 10); // eslint-disable-line no-alert
+            }
+            const newListValue = rows.map(row => row[columnNumber - 1])
+                .filter(item => typeof item === 'string'); // CSV importer can leave undefineds
+            const {vm, targetId, id: variableId} = this.props;
+            setVariableValue(vm, targetId, variableId, newListValue);
+        });
+    }
+    handleExport () {
+        const {vm, targetId, id: variableId} = this.props;
+        const variable = getVariable(vm, targetId, variableId);
+        const text = variable.value.join('\r\n');
+        const blob = new Blob([text], {type: 'text/plain;charset=utf-8'});
+        downloadBlob(`${variable.name}.txt`, blob);
+    }
     render () {
         const monitorProps = monitorAdapter(this.props);
         const showSliderOption = availableModes(this.props.opcode).indexOf('slider') !== -1;
+        const isList = this.props.mode === 'list';
         return (
-            <MonitorComponent
-                componentRef={this.setElement}
-                {...monitorProps}
-                draggable={this.props.draggable}
-                height={this.props.height}
-                max={this.props.max}
-                min={this.props.min}
-                mode={this.state.mode}
-                targetId={this.props.targetId}
-                width={this.props.width}
-                onDragEnd={this.handleDragEnd}
-                onNextMode={this.handleNextMode}
-                onSetModeToDefault={this.handleSetModeToDefault}
-                onSetModeToLarge={this.handleSetModeToLarge}
-                onSetModeToSlider={showSliderOption ? this.handleSetModeToSlider : null}
-            />
+            <React.Fragment>
+                {this.state.sliderPrompt && <SliderPrompt
+                    isDiscrete={this.props.isDiscrete}
+                    maxValue={parseFloat(this.props.max)}
+                    minValue={parseFloat(this.props.min)}
+                    onCancel={this.handleSliderPromptClose}
+                    onOk={this.handleSliderPromptOk}
+                />}
+                <MonitorComponent
+                    componentRef={this.setElement}
+                    {...monitorProps}
+                    draggable={this.props.draggable}
+                    height={this.props.height}
+                    isDiscrete={this.props.isDiscrete}
+                    max={this.props.max}
+                    min={this.props.min}
+                    mode={this.props.mode}
+                    targetId={this.props.targetId}
+                    width={this.props.width}
+                    onDragEnd={this.handleDragEnd}
+                    onExport={isList ? this.handleExport : null}
+                    onImport={isList ? this.handleImport : null}
+                    onNextMode={this.handleNextMode}
+                    onSetModeToDefault={isList ? null : this.handleSetModeToDefault}
+                    onSetModeToLarge={isList ? null : this.handleSetModeToLarge}
+                    onSetModeToSlider={showSliderOption ? this.handleSetModeToSlider : null}
+                    onSliderPromptOpen={this.handleSliderPromptOpen}
+                />
+            </React.Fragment>
         );
     }
 }
@@ -125,6 +226,8 @@ Monitor.propTypes = {
     draggable: PropTypes.bool,
     height: PropTypes.number,
     id: PropTypes.string.isRequired,
+    intl: intlShape,
+    isDiscrete: PropTypes.bool,
     max: PropTypes.number,
     min: PropTypes.number,
     mode: PropTypes.oneOf(['default', 'slider', 'large', 'list']),
@@ -147,12 +250,14 @@ Monitor.propTypes = {
             PropTypes.number
         ]))
     ]), // eslint-disable-line react/no-unused-prop-types
+    vm: PropTypes.instanceOf(VM),
     width: PropTypes.number,
     x: PropTypes.number,
     y: PropTypes.number
 };
 const mapStateToProps = state => ({
-    monitorLayout: state.scratchGui.monitorLayout
+    monitorLayout: state.scratchGui.monitorLayout,
+    vm: state.scratchGui.vm
 });
 const mapDispatchToProps = dispatch => ({
     addMonitorRect: (id, rect, savePosition) =>
@@ -160,7 +265,8 @@ const mapDispatchToProps = dispatch => ({
     resizeMonitorRect: (id, newWidth, newHeight) => dispatch(resizeMonitorRect(id, newWidth, newHeight)),
     removeMonitorRect: id => dispatch(removeMonitorRect(id))
 });
-export default connect(
+
+export default injectIntl(connect(
     mapStateToProps,
     mapDispatchToProps
-)(Monitor);
+)(Monitor));
