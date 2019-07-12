@@ -4,7 +4,6 @@ import React from 'react';
 import {defineMessages, injectIntl, intlShape} from 'react-intl';
 import VM from 'scratch-vm';
 
-import analytics from '../lib/analytics';
 import backdropLibraryContent from '../lib/libraries/backdrops.json';
 import backdropTags from '../lib/libraries/backdrop-tags';
 import LibraryComponent from '../components/library/library.jsx';
@@ -33,12 +32,8 @@ class BackdropLibrary extends React.Component {
             bitmapResolution: item.info.length > 2 ? item.info[2] : 1,
             skinId: null
         };
+        // Do not switch to stage, just add the backdrop
         this.props.vm.addBackdrop(item.md5, vmBackdrop);
-        analytics.event({
-            category: 'library',
-            action: 'Select Backdrop',
-            label: item.name
-        });
     }
     render () {
         return (

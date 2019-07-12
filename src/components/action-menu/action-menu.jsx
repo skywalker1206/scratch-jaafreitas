@@ -24,6 +24,7 @@ class ActionMenu extends React.Component {
             isOpen: false,
             forceHide: false
         };
+        this.mainTooltipId = `tooltip-${Math.random()}`;
     }
     componentDidMount () {
         // Touch start on the main button is caught to trigger open and not click
@@ -66,6 +67,7 @@ class ActionMenu extends React.Component {
     handleTouchOutside (e) {
         if (this.state.isOpen && !this.containerRef.contains(e.target)) {
             this.setState({isOpen: false});
+            ReactTooltip.hide();
         }
     }
     clickDelayer (fn) {
@@ -74,8 +76,12 @@ class ActionMenu extends React.Component {
         // for now all this work is to ensure the menu closes BEFORE the
         // (possibly slow) action is started.
         return event => {
+            ReactTooltip.hide();
+            if (fn) fn(event);
+            // Blur the button so it does not keep focus after being clicked
+            // This prevents keyboard events from triggering the button
+            this.buttonRef.blur();
             this.setState({forceHide: true, isOpen: false}, () => {
-                if (fn) fn(event);
                 setTimeout(() => this.setState({forceHide: false}));
             });
         };
@@ -99,10 +105,9 @@ class ActionMenu extends React.Component {
             img: mainImg,
             title: mainTitle,
             moreButtons,
+            tooltipPlace,
             onClick
         } = this.props;
-
-        const mainTooltipId = `tooltip-${Math.random()}`;
 
         return (
             <div
@@ -117,7 +122,7 @@ class ActionMenu extends React.Component {
                 <button
                     aria-label={mainTitle}
                     className={classNames(styles.button, styles.mainButton)}
-                    data-for={mainTooltipId}
+                    data-for={this.mainTooltipId}
                     data-tip={mainTitle}
                     ref={this.setButtonRef}
                     onClick={this.clickDelayer(onClick)}
@@ -131,16 +136,16 @@ class ActionMenu extends React.Component {
                 <ReactTooltip
                     className={styles.tooltip}
                     effect="solid"
-                    id={mainTooltipId}
-                    place="left"
+                    id={this.mainTooltipId}
+                    place={tooltipPlace || 'left'}
                 />
                 <div className={styles.moreButtonsOuter}>
                     <div className={styles.moreButtons}>
                         {(moreButtons || []).map(({img, title, onClick: handleClick,
-                            fileAccept, fileChange, fileInput}, keyId) => {
+                            fileAccept, fileChange, fileInput, fileMultiple}, keyId) => {
                             const isComingSoon = !handleClick;
                             const hasFileInput = fileInput;
-                            const tooltipId = title;
+                            const tooltipId = `${this.mainTooltipId}-${title}`;
                             return (
                                 <div key={`${tooltipId}-${keyId}`}>
                                     <button
@@ -161,6 +166,7 @@ class ActionMenu extends React.Component {
                                             <input
                                                 accept={fileAccept}
                                                 className={styles.fileInput}
+                                                multiple={fileMultiple}
                                                 ref={fileInput}
                                                 type="file"
                                                 onChange={fileChange}
@@ -172,7 +178,7 @@ class ActionMenu extends React.Component {
                                         })}
                                         effect="solid"
                                         id={tooltipId}
-                                        place="left"
+                                        place={tooltipPlace || 'left'}
                                     />
                                 </div>
                             );
@@ -193,10 +199,12 @@ ActionMenu.propTypes = {
         onClick: PropTypes.func, // Optional, "coming soon" if no callback provided
         fileAccept: PropTypes.string, // Optional, only for file upload
         fileChange: PropTypes.func, // Optional, only for file upload
-        fileInput: PropTypes.func // Optional, only for file upload
+        fileInput: PropTypes.func, // Optional, only for file upload
+        fileMultiple: PropTypes.bool // Optional, only for file upload
     })),
     onClick: PropTypes.func.isRequired,
-    title: PropTypes.node.isRequired
+    title: PropTypes.node.isRequired,
+    tooltipPlace: PropTypes.string
 };
 
 export default ActionMenu;

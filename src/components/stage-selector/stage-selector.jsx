@@ -5,13 +5,14 @@ import {defineMessages, intlShape, injectIntl, FormattedMessage} from 'react-int
 
 import Box from '../box/box.jsx';
 import ActionMenu from '../action-menu/action-menu.jsx';
-import CostumeCanvas from '../costume-canvas/costume-canvas.jsx';
 import styles from './stage-selector.css';
+import {isRtl} from 'scratch-l10n';
 
 import backdropIcon from '../action-menu/icon--backdrop.svg';
 import fileUploadIcon from '../action-menu/icon--file-upload.svg';
 import paintIcon from '../action-menu/icon--paint.svg';
 import surpriseIcon from '../action-menu/icon--surprise.svg';
+import searchIcon from '../action-menu/icon--search.svg';
 
 const messages = defineMessages({
     addBackdropFromLibrary: {
@@ -39,13 +40,19 @@ const messages = defineMessages({
 const StageSelector = props => {
     const {
         backdropCount,
+        containerRef,
+        dragOver,
         fileInputRef,
         intl,
         selected,
+        raised,
+        receivedBlocks,
         url,
         onBackdropFileUploadClick,
         onBackdropFileUpload,
         onClick,
+        onMouseEnter,
+        onMouseLeave,
         onNewBackdropClick,
         onSurpriseBackdropClick,
         onEmptyBackdropClick,
@@ -54,9 +61,14 @@ const StageSelector = props => {
     return (
         <Box
             className={classNames(styles.stageSelector, {
-                [styles.isSelected]: selected
+                [styles.isSelected]: selected,
+                [styles.raised]: raised || dragOver,
+                [styles.receivedBlocks]: receivedBlocks
             })}
+            componentRef={containerRef}
             onClick={onClick}
+            onMouseEnter={onMouseEnter}
+            onMouseLeave={onMouseLeave}
             {...componentProps}
         >
             <div className={styles.header}>
@@ -69,11 +81,9 @@ const StageSelector = props => {
                 </div>
             </div>
             {url ? (
-                <CostumeCanvas
+                <img
                     className={styles.costumeCanvas}
-                    height={54}
-                    url={url}
-                    width={72}
+                    src={url}
                 />
             ) : null}
             <div className={styles.label}>
@@ -92,9 +102,10 @@ const StageSelector = props => {
                         title: intl.formatMessage(messages.addBackdropFromFile),
                         img: fileUploadIcon,
                         onClick: onBackdropFileUploadClick,
-                        fileAccept: '.svg, .png, .jpg, .jpeg', // Bitmap coming soon
+                        fileAccept: '.svg, .png, .jpg, .jpeg, .gif',
                         fileChange: onBackdropFileUpload,
-                        fileInput: fileInputRef
+                        fileInput: fileInputRef,
+                        fileMultiple: true
                     }, {
                         title: intl.formatMessage(messages.addBackdropFromSurprise),
                         img: surpriseIcon,
@@ -104,9 +115,14 @@ const StageSelector = props => {
                         title: intl.formatMessage(messages.addBackdropFromPaint),
                         img: paintIcon,
                         onClick: onEmptyBackdropClick
+                    }, {
+                        title: intl.formatMessage(messages.addBackdropFromLibrary),
+                        img: searchIcon,
+                        onClick: onNewBackdropClick
                     }
                 ]}
                 title={intl.formatMessage(messages.addBackdropFromLibrary)}
+                tooltipPlace={isRtl(intl.locale) ? 'right' : 'left'}
                 onClick={onNewBackdropClick}
             />
         </Box>
@@ -115,14 +131,20 @@ const StageSelector = props => {
 
 StageSelector.propTypes = {
     backdropCount: PropTypes.number.isRequired,
+    containerRef: PropTypes.func,
+    dragOver: PropTypes.bool,
     fileInputRef: PropTypes.func,
     intl: intlShape.isRequired,
     onBackdropFileUpload: PropTypes.func,
     onBackdropFileUploadClick: PropTypes.func,
     onClick: PropTypes.func,
     onEmptyBackdropClick: PropTypes.func,
+    onMouseEnter: PropTypes.func,
+    onMouseLeave: PropTypes.func,
     onNewBackdropClick: PropTypes.func,
     onSurpriseBackdropClick: PropTypes.func,
+    raised: PropTypes.bool.isRequired,
+    receivedBlocks: PropTypes.bool.isRequired,
     selected: PropTypes.bool.isRequired,
     url: PropTypes.string
 };

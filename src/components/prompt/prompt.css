@@ -10,12 +10,21 @@
     padding: 1.5rem 2.25rem;
 }
 
+.body input[type="checkbox"],
+.body input[type="radio"] {
+    margin: 3px;
+}
+
 .label {
     font-weight: 500;
     margin: 0 0 0.75rem;
 }
 
-.input {
+.disabled-label {
+    opacity: 0.5;
+}
+
+.variable-name-text-input {
     margin-bottom: 1.5rem;
     width: 100%;
     border: 1px solid $ui-black-transparent;
@@ -24,6 +33,20 @@
     height: 3rem;
     color: $text-primary-transparent;
     font-size: .875rem;
+}
+
+.info-message {
+    font-weight: normal;
+    font-size: .875rem;
+    margin-bottom: 1.5rem;
+    text-align: center;
+}
+
+.options-row {
+    display: flex;
+    font-weight: normal;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
 }
 
 .button-row {
@@ -46,36 +69,24 @@
     color: white;
 }
 
-.button-row button + button {
+[dir="ltr"] .button-row button + button {
     margin-left: 0.5rem;
 }
 
-.more-options {
+[dir="rtl"] .button-row button + button {
+    margin-right: 0.5rem;
+}
+
+.cloud-option {
+    display:flex;
     border-top: 1px dashed hsla(0, 0%, 0%, .25);
     overflow: visible;
-    padding: 1rem;
+    padding: 1rem 0;
     text-align: center;
-    margin: 0 0 1rem;
-}
-
-.hide-more-options {
-    display: none;
-}
-
-.more-options-accordion {
-    width: 60%;
+    width: 100%;
     margin: 0 auto;
 }
 
-.more-options-text {
-    opacity: .5;
-}
-
-.more-options-icon {
-    width: .75rem;
-    height: .75rem;
-    margin-left: .5rem;
-    vertical-align: middle;
-    padding-bottom: .2rem;
+.cloud-option-text {
     opacity: .5;
 }

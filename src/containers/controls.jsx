@@ -2,8 +2,8 @@ import bindAll from 'lodash.bindall';
 import PropTypes from 'prop-types';
 import React from 'react';
 import VM from 'scratch-vm';
+import {connect} from 'react-redux';
 
-import analytics from '../lib/analytics';
 import ControlsComponent from '../components/controls/controls.jsx';
 
 class Controls extends React.Component {
@@ -11,60 +11,37 @@ class Controls extends React.Component {
         super(props);
         bindAll(this, [
             'handleGreenFlagClick',
-            'handleStopAllClick',
-            'onProjectRunStart',
-            'onProjectRunStop'
+            'handleStopAllClick'
         ]);
-        this.state = {
-            projectRunning: false,
-            turbo: false
-        };
-    }
-    componentDidMount () {
-        this.props.vm.addListener('PROJECT_RUN_START', this.onProjectRunStart);
-        this.props.vm.addListener('PROJECT_RUN_STOP', this.onProjectRunStop);
-    }
-    componentWillUnmount () {
-        this.props.vm.removeListener('PROJECT_RUN_START', this.onProjectRunStart);
-        this.props.vm.removeListener('PROJECT_RUN_STOP', this.onProjectRunStop);
-    }
-    onProjectRunStart () {
-        this.setState({projectRunning: true});
-    }
-    onProjectRunStop () {
-        this.setState({projectRunning: false});
     }
     handleGreenFlagClick (e) {
         e.preventDefault();
         if (e.shiftKey) {
-            this.setState({turbo: !this.state.turbo});
-            this.props.vm.setTurboMode(!this.state.turbo);
+            this.props.vm.setTurboMode(!this.props.turbo);
         } else {
+            if (!this.props.isStarted) {
+                this.props.vm.start();
+            }
             this.props.vm.greenFlag();
-            analytics.event({
-                category: 'general',
-                action: 'Green Flag'
-            });
         }
     }
     handleStopAllClick (e) {
         e.preventDefault();
         this.props.vm.stopAll();
-        analytics.event({
-            category: 'general',
-            action: 'Stop Button'
-        });
     }
     render () {
         const {
             vm, // eslint-disable-line no-unused-vars
+            isStarted, // eslint-disable-line no-unused-vars
+            projectRunning,
+            turbo,
             ...props
         } = this.props;
         return (
             <ControlsComponent
                 {...props}
-                active={this.state.projectRunning}
-                turbo={this.state.turbo}
+                active={projectRunning}
+                turbo={turbo}
                 onGreenFlagClick={this.handleGreenFlagClick}
                 onStopAllClick={this.handleStopAllClick}
             />
@@ -73,7 +50,18 @@ class Controls extends React.Component {
 }
 
 Controls.propTypes = {
+    isStarted: PropTypes.bool.isRequired,
+    projectRunning: PropTypes.bool.isRequired,
+    turbo: PropTypes.bool.isRequired,
     vm: PropTypes.instanceOf(VM)
 };
 
-export default Controls;
+const mapStateToProps = state => ({
+    isStarted: state.scratchGui.vmStatus.running,
+    projectRunning: state.scratchGui.vmStatus.running,
+    turbo: state.scratchGui.vmStatus.turbo
+});
+// no-op function to prevent dispatch prop being passed to component
+const mapDispatchToProps = () => ({});
+
+export default connect(mapStateToProps, mapDispatchToProps)(Controls);

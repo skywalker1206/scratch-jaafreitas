@@ -6,6 +6,7 @@ import VM from 'scratch-vm';
 import SpriteLibrary from '../../containers/sprite-library.jsx';
 import SpriteSelectorComponent from '../sprite-selector/sprite-selector.jsx';
 import StageSelector from '../../containers/stage-selector.jsx';
+import {STAGE_DISPLAY_SIZES} from '../../lib/layout-constants';
 
 import styles from './target-pane.css';
 
@@ -20,14 +21,18 @@ const TargetPane = ({
     fileInputRef,
     hoveredTarget,
     spriteLibraryVisible,
+    onActivateBlocksTab,
     onChangeSpriteDirection,
     onChangeSpriteName,
+    onChangeSpriteRotationStyle,
     onChangeSpriteSize,
     onChangeSpriteVisibility,
     onChangeSpriteX,
     onChangeSpriteY,
     onDeleteSprite,
+    onDrop,
     onDuplicateSprite,
+    onExportSprite,
     onFileUploadClick,
     onNewSpriteClick,
     onPaintSpriteClick,
@@ -37,6 +42,7 @@ const TargetPane = ({
     onSurpriseSpriteClick,
     raiseSprites,
     stage,
+    stageSize,
     sprites,
     vm,
     ...componentProps
@@ -53,14 +59,18 @@ const TargetPane = ({
             selectedId={editingTarget}
             spriteFileInput={fileInputRef}
             sprites={sprites}
+            stageSize={stageSize}
             onChangeSpriteDirection={onChangeSpriteDirection}
             onChangeSpriteName={onChangeSpriteName}
+            onChangeSpriteRotationStyle={onChangeSpriteRotationStyle}
             onChangeSpriteSize={onChangeSpriteSize}
             onChangeSpriteVisibility={onChangeSpriteVisibility}
             onChangeSpriteX={onChangeSpriteX}
             onChangeSpriteY={onChangeSpriteY}
             onDeleteSprite={onDeleteSprite}
+            onDrop={onDrop}
             onDuplicateSprite={onDuplicateSprite}
+            onExportSprite={onExportSprite}
             onFileUploadClick={onFileUploadClick}
             onNewSpriteClick={onNewSpriteClick}
             onPaintSpriteClick={onPaintSpriteClick}
@@ -70,9 +80,9 @@ const TargetPane = ({
         />
         <div className={styles.stageSelectorWrapper}>
             {stage.id && <StageSelector
-                assetId={
+                asset={
                     stage.costume &&
-                    stage.costume.assetId
+                    stage.costume.asset
                 }
                 backdropCount={stage.costumeCount}
                 id={stage.id}
@@ -83,6 +93,7 @@ const TargetPane = ({
                 {spriteLibraryVisible ? (
                     <SpriteLibrary
                         vm={vm}
+                        onActivateBlocksTab={onActivateBlocksTab}
                         onRequestClose={onRequestCloseSpriteLibrary}
                     />
                 ) : null}
@@ -119,14 +130,18 @@ TargetPane.propTypes = {
         hoveredSprite: PropTypes.string,
         receivedBlocks: PropTypes.bool
     }),
+    onActivateBlocksTab: PropTypes.func.isRequired,
     onChangeSpriteDirection: PropTypes.func,
     onChangeSpriteName: PropTypes.func,
+    onChangeSpriteRotationStyle: PropTypes.func,
     onChangeSpriteSize: PropTypes.func,
     onChangeSpriteVisibility: PropTypes.func,
     onChangeSpriteX: PropTypes.func,
     onChangeSpriteY: PropTypes.func,
     onDeleteSprite: PropTypes.func,
+    onDrop: PropTypes.func,
     onDuplicateSprite: PropTypes.func,
+    onExportSprite: PropTypes.func,
     onFileUploadClick: PropTypes.func,
     onNewSpriteClick: PropTypes.func,
     onPaintSpriteClick: PropTypes.func,
@@ -139,6 +154,7 @@ TargetPane.propTypes = {
     spriteLibraryVisible: PropTypes.bool,
     sprites: PropTypes.objectOf(spriteShape),
     stage: spriteShape,
+    stageSize: PropTypes.oneOf(Object.keys(STAGE_DISPLAY_SIZES)).isRequired,
     vm: PropTypes.instanceOf(VM)
 };
 

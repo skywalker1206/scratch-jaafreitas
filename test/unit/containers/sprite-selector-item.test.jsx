@@ -36,7 +36,10 @@ describe('SpriteSelectorItem Container', () => {
     };
 
     beforeEach(() => {
-        store = mockStore({hoveredTarget: {receivedBlocks: false, sprite: null}});
+        store = mockStore({scratchGui: {
+            hoveredTarget: {receivedBlocks: false, sprite: null},
+            assetDrag: {dragging: false}
+        }});
         className = 'ponies';
         costumeURL = 'https://scratch.mit.edu/foo/bar/pony';
         id = 1337;
@@ -45,22 +48,11 @@ describe('SpriteSelectorItem Container', () => {
         onDeleteButtonClick = jest.fn();
         dispatchSetHoveredSprite = jest.fn();
         selected = true;
-        // Mock window.confirm() which is called when the close button is clicked.
-        global.confirm = jest.fn(() => true);
     });
 
-    test('should confirm if the user really wants to delete the sprite', () => {
+    test('should delete the sprite', () => {
         const wrapper = mountWithIntl(getContainer());
         wrapper.find(CloseButton).simulate('click');
-        expect(global.confirm).toHaveBeenCalled();
         expect(onDeleteButtonClick).toHaveBeenCalledWith(1337);
-    });
-
-    test('should not delete the sprite if the user cancels', () => {
-        global.confirm = jest.fn(() => false);
-        const wrapper = mountWithIntl(getContainer());
-        wrapper.find(CloseButton).simulate('click');
-        expect(global.confirm).toHaveBeenCalled();
-        expect(onDeleteButtonClick).not.toHaveBeenCalled();
     });
 });

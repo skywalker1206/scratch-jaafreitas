@@ -5,13 +5,15 @@ import {defineMessages, injectIntl, intlShape} from 'react-intl';
 import VM from 'scratch-vm';
 import AudioEngine from 'scratch-audio';
 
-import analytics from '../lib/analytics';
 import LibraryComponent from '../components/library/library.jsx';
 
 import soundIcon from '../components/asset-panel/icon--sound.svg';
+import soundIconRtl from '../components/asset-panel/icon--sound-rtl.svg';
 
 import soundLibraryContent from '../lib/libraries/sounds.json';
 import soundTags from '../lib/libraries/sound-tags';
+
+import {connect} from 'react-redux';
 
 const messages = defineMessages({
     libraryTitle: {
@@ -29,20 +31,63 @@ class SoundLibrary extends React.PureComponent {
             'handleItemMouseEnter',
             'handleItemMouseLeave'
         ]);
+
+        /**
+         * AudioEngine that will decode and play sounds for us.
+         * @type {AudioEngine}
+         */
+        this.audioEngine = null;
+        /**
+         * A promise for the sound queued to play as soon as it loads and
+         * decodes.
+         * @type {Promise<SoundPlayer>}
+         */
+        this.playingSoundPromise = null;
     }
     componentDidMount () {
         this.audioEngine = new AudioEngine();
-        this.player = this.audioEngine.createPlayer();
+        this.playingSoundPromise = null;
     }
     componentWillUnmount () {
-        this.player.stopAllSounds();
+        this.stopPlayingSound();
+    }
+    stopPlayingSound () {
+        // Playback is queued, playing, or has played recently and finished
+        // normally.
+        if (this.playingSoundPromise !== null) {
+            // Queued playback began playing before this method.
+            if (this.playingSoundPromise.isPlaying) {
+                // Fetch the player from the promise and stop playback soon.
+                this.playingSoundPromise.then(soundPlayer => {
+                    soundPlayer.stop();
+                });
+            } else {
+                // Fetch the player from the promise and stop immediately. Since
+                // the sound is not playing yet, this callback will be called
+                // immediately after the sound starts playback. Stopping it
+                // immediately will have the effect of no sound being played.
+                this.playingSoundPromise.then(soundPlayer => {
+                    soundPlayer.stopImmediately();
+                });
+            }
+            // No further work should be performed on this promise and its
+            // soundPlayer.
+            this.playingSoundPromise = null;
+        }
     }
     handleItemMouseEnter (soundItem) {
         const md5ext = soundItem._md5;
         const idParts = md5ext.split('.');
         const md5 = idParts[0];
         const vm = this.props.vm;
-        vm.runtime.storage.load(vm.runtime.storage.AssetType.Sound, md5)
+
+        // In case enter is called twice without a corresponding leave
+        // inbetween, stop the last playback before queueing a new sound.
+        this.stopPlayingSound();
+
+        // Save the promise so code to stop the sound may queue the stop
+        // instruction after the play instruction.
+        this.playingSoundPromise = vm.runtime.storage.load(vm.runtime.storage.AssetType.Sound, md5)
             .then(soundAsset => {
                 const sound = {
                     md5: md5ext,
@@ -50,14 +95,23 @@ class SoundLibrary extends React.PureComponent {
                     format: soundItem.format,
                     data: soundAsset.data
                 };
-                return this.audioEngine.decodeSound(sound);
+                return this.audioEngine.decodeSoundPlayer(sound);
             })
-            .then(soundId => {
-                this.player.playSound(soundId);
+            .then(soundPlayer => {
+                soundPlayer.connect(this.audioEngine);
+                // Play the sound. Playing the sound will always come before a
+                // paired stop if the sound must stop early.
+                soundPlayer.play();
+                // Set that the sound is playing. This affects the type of stop
+                // instruction given if the sound must stop early.
+                if (this.playingSoundPromise !== null) {
+                    this.playingSoundPromise.isPlaying = true;
+                }
+                return soundPlayer;
             });
     }
     handleItemMouseLeave () {
-        this.player.stopAllSounds();
+        this.stopPlayingSound();
     }
     handleItemSelected (soundItem) {
         const vmSound = {
@@ -70,11 +124,6 @@ class SoundLibrary extends React.PureComponent {
         this.props.vm.addSound(vmSound).then(() => {
             this.props.onNewSound();
         });
-        analytics.event({
-            category: 'library',
-            action: 'Select Sound',
-            label: soundItem.name
-        });
     }
     render () {
         // @todo need to use this hack to avoid library using md5 for image
@@ -85,7 +134,7 @@ class SoundLibrary extends React.PureComponent {
             } = sound;
             return {
                 _md5: md5,
-                rawURL: soundIcon,
+                rawURL: this.props.isRtl ? soundIconRtl : soundIcon,
                 ...otherData
             };
         });
@@ -107,9 +156,19 @@ class SoundLibrary extends React.PureComponent {
 
 SoundLibrary.propTypes = {
     intl: intlShape.isRequired,
+    isRtl: PropTypes.bool,
     onNewSound: PropTypes.func.isRequired,
     onRequestClose: PropTypes.func,
     vm: PropTypes.instanceOf(VM).isRequired
 };
 
-export default injectIntl(SoundLibrary);
+const mapStateToProps = state => ({
+    isRtl: state.locales.isRtl
+});
+
+const mapDispatchToProps = () => ({});
+
+export default injectIntl(connect(
+    mapStateToProps,
+    mapDispatchToProps
+)(SoundLibrary));

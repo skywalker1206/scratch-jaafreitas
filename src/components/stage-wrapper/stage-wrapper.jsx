@@ -1,46 +1,59 @@
 import PropTypes from 'prop-types';
 import React from 'react';
-import MediaQuery from 'react-responsive';
 import VM from 'scratch-vm';
 
 import Box from '../box/box.jsx';
-import layout from '../../lib/layout-constants.js';
+import {STAGE_DISPLAY_SIZES} from '../../lib/layout-constants.js';
 import StageHeader from '../../containers/stage-header.jsx';
 import Stage from '../../containers/stage.jsx';
+import Loader from '../loader/loader.jsx';
 
 import styles from './stage-wrapper.css';
 
 const StageWrapperComponent = function (props) {
     const {
+        isFullScreen,
+        isRtl,
         isRendererSupported,
+        loading,
+        stageSize,
         vm
     } = props;
 
     return (
-        <Box className={styles.stageWrapper}>
+        <Box
+            className={styles.stageWrapper}
+            dir={isRtl ? 'rtl' : 'ltr'}
+        >
             <Box className={styles.stageMenuWrapper}>
-                <StageHeader vm={vm} />
+                <StageHeader
+                    stageSize={stageSize}
+                    vm={vm}
+                />
             </Box>
             <Box className={styles.stageCanvasWrapper}>
-                {/* eslint-disable arrow-body-style */}
-                <MediaQuery minWidth={layout.fullSizeMinWidth}>{isFullSize => {
-                    return isRendererSupported ? (
+                {
+                    isRendererSupported ?
                         <Stage
-                            height={isFullSize ? layout.fullStageHeight : layout.smallerStageHeight}
-                            shrink={0}
+                            stageSize={stageSize}
                             vm={vm}
-                            width={isFullSize ? layout.fullStageWidth : layout.smallerStageWidth}
-                        />
-                    ) : null;
-                }}</MediaQuery>
-                {/* eslint-enable arrow-body-style */}
+                        /> :
+                        null
+                }
             </Box>
+            {loading ? (
+                <Loader isFullScreen={isFullScreen} />
+            ) : null}
         </Box>
     );
 };
 
 StageWrapperComponent.propTypes = {
+    isFullScreen: PropTypes.bool,
     isRendererSupported: PropTypes.bool.isRequired,
+    isRtl: PropTypes.bool.isRequired,
+    loading: PropTypes.bool,
+    stageSize: PropTypes.oneOf(Object.keys(STAGE_DISPLAY_SIZES)).isRequired,
     vm: PropTypes.instanceOf(VM).isRequired
 };
 

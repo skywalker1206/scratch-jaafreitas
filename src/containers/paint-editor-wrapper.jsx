@@ -4,8 +4,6 @@ import bindAll from 'lodash.bindall';
 import VM from 'scratch-vm';
 import PaintEditor from 'scratch-paint';
 
-import analytics from '../lib/analytics';
-
 import {connect} from 'react-redux';
 
 class PaintEditorWrapper extends React.Component {
@@ -16,8 +14,10 @@ class PaintEditorWrapper extends React.Component {
             'handleUpdateName'
         ]);
     }
-    componentDidMount () {
-        analytics.pageview('/editors/paint');
+    shouldComponentUpdate (nextProps) {
+        return this.props.imageId !== nextProps.imageId ||
+            this.props.rtl !== nextProps.rtl ||
+            this.props.name !== nextProps.name;
     }
     handleUpdateName (name) {
         this.props.vm.renameCostume(this.props.selectedCostumeIndex, name);
@@ -40,10 +40,16 @@ class PaintEditorWrapper extends React.Component {
     }
     render () {
         if (!this.props.imageId) return null;
+        const {
+            selectedCostumeIndex,
+            vm,
+            ...componentProps
+        } = this.props;
+
         return (
             <PaintEditor
-                {...this.props}
-                image={this.props.vm.getCostume(this.props.selectedCostumeIndex)}
+                {...componentProps}
+                image={vm.getCostume(selectedCostumeIndex)}
                 onUpdateImage={this.handleUpdateImage}
                 onUpdateName={this.handleUpdateName}
             />
@@ -57,25 +63,28 @@ PaintEditorWrapper.propTypes = {
     name: PropTypes.string,
     rotationCenterX: PropTypes.number,
     rotationCenterY: PropTypes.number,
+    rtl: PropTypes.bool,
     selectedCostumeIndex: PropTypes.number.isRequired,
     vm: PropTypes.instanceOf(VM)
 };
 
 const mapStateToProps = (state, {selectedCostumeIndex}) => {
-    const {
-        editingTarget,
-        sprites,
-        stage
-    } = state.targets;
-    const target = editingTarget && sprites[editingTarget] ? sprites[editingTarget] : stage;
-    const costume = target && target.costumes[selectedCostumeIndex];
+    const targetId = state.scratchGui.vm.editingTarget.id;
+    const sprite = state.scratchGui.vm.editingTarget.sprite;
+    // Make sure the costume index doesn't go out of range.
+    const index = selectedCostumeIndex < sprite.costumes.length ?
+        selectedCostumeIndex : sprite.costumes.length - 1;
+    const costume = state.scratchGui.vm.editingTarget.sprite.costumes[index];
     return {
         name: costume && costume.name,
         rotationCenterX: costume && costume.rotationCenterX,
         rotationCenterY: costume && costume.rotationCenterY,
         imageFormat: costume && costume.dataFormat,
-        imageId: editingTarget && `${editingTarget}${costume.skinId}`,
-        vm: state.vm
+        imageId: targetId && `${targetId}${costume.skinId}`,
+        rtl: state.locales.isRtl,
+        selectedCostumeIndex: index,
+        vm: state.scratchGui.vm,
+        zoomLevelId: targetId
     };
 };
 

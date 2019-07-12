@@ -5,9 +5,11 @@ import Renderer from 'scratch-render';
 import VM from 'scratch-vm';
 import {connect} from 'react-redux';
 
+import {STAGE_DISPLAY_SIZES} from '../lib/layout-constants';
 import {getEventXY} from '../lib/touch-utils';
 import VideoProvider from '../lib/video/video-provider';
 import {SVGRenderer as V2SVGAdapter} from 'scratch-svg-renderer';
+import {BitmapAdapter as V2BitmapAdapter} from 'scratch-svg-renderer';
 
 import StageComponent from '../components/stage/stage.jsx';
 
@@ -36,7 +38,6 @@ class Stage extends React.Component {
             'onWheel',
             'updateRect',
             'questionListener',
-            'setCanvas',
             'setDragCanvas',
             'clearDragCanvas',
             'drawDragCanvas',
@@ -51,24 +52,40 @@ class Stage extends React.Component {
             colorInfo: null,
             question: null
         };
+        if (this.props.vm.renderer) {
+            this.renderer = this.props.vm.renderer;
+            this.canvas = this.renderer.canvas;
+        } else {
+            this.canvas = document.createElement('canvas');
+            this.renderer = new Renderer(this.canvas);
+            this.props.vm.attachRenderer(this.renderer);
+
+            // Only attach a video provider once because it is stateful
+            this.props.vm.setVideoProvider(new VideoProvider());
+
+            // Calling draw a single time before any project is loaded just makes
+            // the canvas white instead of solid black–needed because it is not
+            // possible to use CSS to style the canvas to have a different
+            // default color
+            this.props.vm.renderer.draw();
+        }
+        this.props.vm.attachV2SVGAdapter(new V2SVGAdapter());
+        this.props.vm.attachV2BitmapAdapter(new V2BitmapAdapter());
     }
     componentDidMount () {
         this.attachRectEvents();
         this.attachMouseEvents(this.canvas);
         this.updateRect();
-        this.renderer = new Renderer(this.canvas);
-        this.props.vm.attachRenderer(this.renderer);
-        this.props.vm.attachV2SVGAdapter(new V2SVGAdapter());
         this.props.vm.runtime.addListener('QUESTION', this.questionListener);
-        this.props.vm.setVideoProvider(new VideoProvider());
     }
     shouldComponentUpdate (nextProps, nextState) {
-        return this.props.width !== nextProps.width ||
-            this.props.height !== nextProps.height ||
+        return this.props.stageSize !== nextProps.stageSize ||
             this.props.isColorPicking !== nextProps.isColorPicking ||
             this.state.colorInfo !== nextState.colorInfo ||
             this.props.isFullScreen !== nextProps.isFullScreen ||
-            this.state.question !== nextState.question;
+            this.state.question !== nextState.question ||
+            this.props.micIndicator !== nextProps.micIndicator ||
+            this.props.isStarted !== nextProps.isStarted;
     }
     componentDidUpdate (prevProps) {
         if (this.props.isColorPicking && !prevProps.isColorPicking) {
@@ -95,7 +112,9 @@ class Stage extends React.Component {
     }
     startColorPickingLoop () {
         this.intervalId = setInterval(() => {
-            this.setState({colorInfo: this.getColorInfo(this.pickX, this.pickY)});
+            if (typeof this.pickX === 'number') {
+                this.setState({colorInfo: this.getColorInfo(this.pickX, this.pickY)});
+            }
         }, 30);
     }
     stopColorPickingLoop () {
@@ -158,9 +177,11 @@ class Stage extends React.Component {
         const {x, y} = getEventXY(e);
         const mousePosition = [x - this.rect.left, y - this.rect.top];
 
-        // Set the pickX/Y for the color picker loop to pick up
-        this.pickX = mousePosition[0];
-        this.pickY = mousePosition[1];
+        if (this.props.isColorPicking) {
+            // Set the pickX/Y for the color picker loop to pick up
+            this.pickX = mousePosition[0];
+            this.pickY = mousePosition[1];
+        }
 
         if (this.state.mouseDown && !this.state.isDragging) {
             const distanceFromMouseDown = Math.sqrt(
@@ -214,33 +235,11 @@ class Stage extends React.Component {
             this.onStopDrag(mousePosition[0], mousePosition[1]);
         }
         this.props.vm.postIOData('mouse', data);
-    }
-    onMouseDown (e) {
-        this.updateRect();
-        const {x, y} = getEventXY(e);
-        const mousePosition = [x - this.rect.left, y - this.rect.top];
-        if (e.button === 0 || e instanceof TouchEvent) {
-            this.setState({
-                mouseDown: true,
-                mouseDownPosition: mousePosition,
-                mouseDownTimeoutId: setTimeout(
-                    this.onStartDrag.bind(this, mousePosition[0], mousePosition[1]),
-                    400
-                )
-            });
-        }
-        const data = {
-            isDown: true,
-            x: mousePosition[0],
-            y: mousePosition[1],
-            canvasWidth: this.rect.width,
-            canvasHeight: this.rect.height
-        };
-        this.props.vm.postIOData('mouse', data);
-        if (e.preventDefault) {
-            e.preventDefault();
-        }
-        if (this.props.isColorPicking) {
+
+        if (this.props.isColorPicking &&
+            mousePosition[0] > 0 && mousePosition[0] < this.rect.width &&
+            mousePosition[1] > 0 && mousePosition[1] < this.rect.height
+        ) {
             const {r, g, b} = this.state.colorInfo.color;
             const componentToString = c => {
                 const hex = c.toString(16);
@@ -249,6 +248,47 @@ class Stage extends React.Component {
             const colorString = `#${componentToString(r)}${componentToString(g)}${componentToString(b)}`;
             this.props.onDeactivateColorPicker(colorString);
             this.setState({colorInfo: null});
+            this.pickX = null;
+            this.pickY = null;
+        }
+    }
+    onMouseDown (e) {
+        this.updateRect();
+        const {x, y} = getEventXY(e);
+        const mousePosition = [x - this.rect.left, y - this.rect.top];
+        if (this.props.isColorPicking) {
+            // Set the pickX/Y for the color picker loop to pick up
+            this.pickX = mousePosition[0];
+            this.pickY = mousePosition[1];
+            // Immediately update the color picker info
+            this.setState({colorInfo: this.getColorInfo(this.pickX, this.pickY)});
+        } else {
+            if (e.button === 0 || (window.TouchEvent && e instanceof TouchEvent)) {
+                this.setState({
+                    mouseDown: true,
+                    mouseDownPosition: mousePosition,
+                    mouseDownTimeoutId: setTimeout(
+                        this.onStartDrag.bind(this, mousePosition[0], mousePosition[1]),
+                        400
+                    )
+                });
+            }
+            const data = {
+                isDown: true,
+                x: mousePosition[0],
+                y: mousePosition[1],
+                canvasWidth: this.rect.width,
+                canvasHeight: this.rect.height
+            };
+            this.props.vm.postIOData('mouse', data);
+            if (e.preventDefault) {
+                // Prevent default to prevent touch from dragging page
+                e.preventDefault();
+                // But we do want any active input to be blurred
+                if (document.activeElement && document.activeElement.blur) {
+                    document.activeElement.blur();
+                }
+            }
         }
     }
     onWheel (e) {
@@ -298,15 +338,19 @@ class Stage extends React.Component {
         if (this.state.dragId) return;
         const drawableId = this.renderer.pick(x, y);
         if (drawableId === null) return;
-        const drawableData = this.renderer.extractDrawable(drawableId, x, y);
         const targetId = this.props.vm.getTargetIdForDrawableId(drawableId);
         if (targetId === null) return;
 
-        // Only start drags on non-draggable targets in editor drag mode
-        if (!this.props.useEditorDragStyle) {
-            const target = this.props.vm.runtime.getTargetById(targetId);
-            if (!target.draggable) return;
-        }
+        const target = this.props.vm.runtime.getTargetById(targetId);
+
+        // Do not start drag unless in editor drag mode or target is draggable
+        if (!(this.props.useEditorDragStyle || target.draggable)) return;
+
+        // Dragging always brings the target to the front
+        target.goToFront();
+
+        // Extract the drawable art
+        const drawableData = this.renderer.extractDrawable(drawableId, x, y);
 
         this.props.vm.startDrag(targetId);
         this.setState({
@@ -353,9 +397,6 @@ class Stage extends React.Component {
             commonStopDragActions();
         }
     }
-    setCanvas (canvas) {
-        this.canvas = canvas;
-    }
     setDragCanvas (canvas) {
         this.dragCanvas = canvas;
     }
@@ -367,7 +408,7 @@ class Stage extends React.Component {
         } = this.props;
         return (
             <StageComponent
-                canvasRef={this.setCanvas}
+                canvas={this.canvas}
                 colorInfo={this.state.colorInfo}
                 dragRef={this.setDragCanvas}
                 question={this.state.question}
@@ -380,14 +421,15 @@ class Stage extends React.Component {
 }
 
 Stage.propTypes = {
-    height: PropTypes.number,
     isColorPicking: PropTypes.bool,
     isFullScreen: PropTypes.bool.isRequired,
+    isStarted: PropTypes.bool,
+    micIndicator: PropTypes.bool,
     onActivateColorPicker: PropTypes.func,
     onDeactivateColorPicker: PropTypes.func,
+    stageSize: PropTypes.oneOf(Object.keys(STAGE_DISPLAY_SIZES)).isRequired,
     useEditorDragStyle: PropTypes.bool,
-    vm: PropTypes.instanceOf(VM).isRequired,
-    width: PropTypes.number
+    vm: PropTypes.instanceOf(VM).isRequired
 };
 
 Stage.defaultProps = {
@@ -395,10 +437,12 @@ Stage.defaultProps = {
 };
 
 const mapStateToProps = state => ({
-    isColorPicking: state.colorPicker.active,
-    isFullScreen: state.mode.isFullScreen,
+    isColorPicking: state.scratchGui.colorPicker.active,
+    isFullScreen: state.scratchGui.mode.isFullScreen,
+    isStarted: state.scratchGui.vmStatus.started,
+    micIndicator: state.scratchGui.micIndicator,
     // Do not use editor drag style in fullscreen or player mode.
-    useEditorDragStyle: !(state.mode.isFullScreen || state.mode.isPlayerOnly)
+    useEditorDragStyle: !(state.scratchGui.mode.isFullScreen || state.scratchGui.mode.isPlayerOnly)
 });
 
 const mapDispatchToProps = dispatch => ({
