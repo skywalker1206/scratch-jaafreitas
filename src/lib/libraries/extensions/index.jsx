@@ -51,14 +51,9 @@ import gdxforConnectionSmallIconURL from './gdxfor/gdxfor-small.svg';
 
 export default [
     {
-        name: (
-            <FormattedMessage
-                defaultMessage="Data Viewer"
-                description="Name for the 'Data Viewer' extension"
-                id="gui.extension.dataviewer.name"
-            />
-        ),
+        name: 'Data Viewer',
         extensionId: 'dataviewer',
+        collaborator: 'Cassia Fernandez and João Adriano Freitas',
         iconURL: dataviewerIconURL,
         insetIconURL: dataviewerInsetIconURL,
         description: (
@@ -67,9 +62,9 @@ export default [
                 description="Description for the 'Data Viewer' extension"
                 id="gui.extension.dataviewer.description"
             />
-
         ),
-        featured: true
+        featured: true,
+        disabled: false
     },
     {
         name: (
