@@ -65,21 +65,27 @@ export default appTarget => {
 
     ReactDOM.render(
         // important: this is checking whether `simulateScratchDesktop` is truthy, not just defined!
-        simulateScratchDesktop ?
-            <WrappedGui
-                isScratchDesktop
-                showTelemetryModal
-                canSave={false}
-                onTelemetryModalCancel={handleTelemetryModalCancel}
-                onTelemetryModalOptIn={handleTelemetryModalOptIn}
-                onTelemetryModalOptOut={handleTelemetryModalOptOut}
-            /> :
-            <WrappedGui
-                backpackVisible
-                showComingSoon
-                backpackHost={backpackHost}
-                canSave={false}
-                onClickLogo={onClickLogo}
-            />,
+        // jaafreitas: This code shouldn't be merged into production branch
+        // simulateScratchDesktop ?
+        //     <WrappedGui
+        //         isScratchDesktop
+        //         showTelemetryModal
+        //         canSave={false}
+        //         onTelemetryModalCancel={handleTelemetryModalCancel}
+        //         onTelemetryModalOptIn={handleTelemetryModalOptIn}
+        //         onTelemetryModalOptOut={handleTelemetryModalOptOut}
+        //     /> :
+        //     <WrappedGui
+        //         backpackVisible
+        //         showComingSoon
+        //         backpackHost={backpackHost}
+        //         canSave={false}
+        //         onClickLogo={onClickLogo}
+        //     />,
+        <WrappedGui
+            isScratchDesktop
+            canSave={false}
+            onClickLogo={onClickLogo}
+        />,
         appTarget);
 };
