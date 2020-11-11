@@ -108,9 +108,15 @@ class Blocks extends React.Component {
             this.ScratchBlocks.Procedures.createProcedureDefCallback_(this.workspace);
         };
 
+        const dataviewerShowMoreLessBlocks = () => {
+            this.props.vm.runtime.DataviewerMinimalBlocks = !this.props.vm.runtime.DataviewerMinimalBlocks;
+            this.props.vm.runtime.requestToolboxExtensionsUpdate();
+        };
+
         toolboxWorkspace.registerButtonCallback('MAKE_A_VARIABLE', varListButtonCallback(''));
         toolboxWorkspace.registerButtonCallback('MAKE_A_LIST', varListButtonCallback('list'));
         toolboxWorkspace.registerButtonCallback('MAKE_A_PROCEDURE', procButtonCallback);
+        toolboxWorkspace.registerButtonCallback('DATAVIEWER_SHOW_MORE_LESS_BLOCKS', dataviewerShowMoreLessBlocks);
 
         // Store the xml of the toolbox that is actually rendered.
         // This is used in componentDidUpdate instead of prevProps, because
