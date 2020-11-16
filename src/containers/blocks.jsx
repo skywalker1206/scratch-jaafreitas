@@ -141,6 +141,21 @@ class Blocks extends React.Component {
         if (this.props.isVisible) {
             this.setLocale();
         }
+        if (this.props.preLoadedExtensions) {
+            window.setTimeout(() =>
+                this.props.preLoadedExtensions.forEach(extension =>
+                    this.props.vm.extensionManager.loadExtensionURL(extension)
+                ), 1000
+            );
+            // Select the category of the first loaded extension.
+            window.setTimeout(() => {
+                if (this.props.preLoadedExtensions.length > 0) {
+                    this.withToolboxUpdates(() => {
+                        this.workspace.toolbox_.setSelectedCategoryById(this.props.preLoadedExtensions[0]);
+                    });
+                }
+            }, 2000);
+        }
     }
     shouldComponentUpdate (nextProps, nextState) {
         return (
@@ -616,6 +631,7 @@ Blocks.propTypes = {
         comments: PropTypes.bool,
         collapse: PropTypes.bool
     }),
+    preLoadedExtensions: PropTypes.arrayOf(PropTypes.string),
     stageSize: PropTypes.oneOf(Object.keys(STAGE_DISPLAY_SIZES)).isRequired,
     toolboxXML: PropTypes.string,
     updateMetrics: PropTypes.func,
