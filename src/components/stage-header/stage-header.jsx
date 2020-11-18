@@ -11,6 +11,9 @@ import Controls from '../../containers/controls.jsx';
 import {getStageDimensions} from '../../lib/screen-utils';
 import {STAGE_SIZE_MODES} from '../../lib/layout-constants';
 
+import dataviewerTableIcon from './icon--table-dataviewer.png';
+import dataviewerChartIcon from './icon--chart-dataviewer.png';
+
 import fullScreenIcon from './icon--fullscreen.svg';
 import largeStageIcon from './icon--large-stage.svg';
 import smallStageIcon from './icon--small-stage.svg';
@@ -20,6 +23,16 @@ import scratchLogo from '../menu-bar/scratch-logo.svg';
 import styles from './stage-header.css';
 
 const messages = defineMessages({
+    dataviewerTable: {
+        defaultMessage: 'Dataviewer Table',
+        description: 'Button to Dataviewer Table',
+        id: 'gui.stageHeader.dataviewerTable'
+    },
+    dataviewerChart: {
+        defaultMessage: 'Dataviewer Chart',
+        description: 'Button to Dataviewer Chart',
+        id: 'gui.stageHeader.dataviewerChart'
+    },
     largeStageSizeMessage: {
         defaultMessage: 'Switch to large stage',
         description: 'Button to change stage size to large',
@@ -52,6 +65,8 @@ const StageHeaderComponent = function (props) {
         isFullScreen,
         isPlayerOnly,
         onKeyPress,
+        onOpenDataviewerTable,
+        onOpenDataviewerChart,
         onSetStageLarge,
         onSetStageSmall,
         onSetStageFull,
@@ -105,6 +120,46 @@ const StageHeaderComponent = function (props) {
             </Box>
         );
     } else {
+        const dataviewerControls = (
+            <div className={styles.stageSizeToggleGroup}>
+                <div>
+                    <Button
+                        className={classNames(
+                            styles.stageButton,
+                            styles.stageButtonFirst,
+                            styles.stageDataviewerButton
+                        )}
+                        onClick={onOpenDataviewerTable}
+                    >
+                        <img
+                            alt={props.intl.formatMessage(messages.dataviewerTable)}
+                            className={styles.stageDataviewerButtonIcon}
+                            draggable={false}
+                            src={dataviewerTableIcon}
+                            title={props.intl.formatMessage(messages.dataviewerTable)}
+                        />
+                    </Button>
+                </div>
+                <div>
+                    <Button
+                        className={classNames(
+                            styles.stageButton,
+                            styles.stageButtonLast,
+                            styles.stageDataviewerButton
+                        )}
+                        onClick={onOpenDataviewerChart}
+                    >
+                        <img
+                            alt={props.intl.formatMessage(messages.dataviewerChart)}
+                            className={styles.stageDataviewerButtonIcon}
+                            draggable={false}
+                            src={dataviewerChartIcon}
+                            title={props.intl.formatMessage(messages.dataviewerChart)}
+                        />
+                    </Button>
+                </div>
+            </div>
+        );
         const stageControls =
             isPlayerOnly ? (
                 []
@@ -151,6 +206,7 @@ const StageHeaderComponent = function (props) {
                 <Box className={styles.stageMenuWrapper}>
                     <Controls vm={vm} />
                     <div className={styles.stageSizeRow}>
+                        {dataviewerControls}
                         {stageControls}
                         <div>
                             <Button
@@ -185,6 +241,8 @@ StageHeaderComponent.propTypes = {
     isFullScreen: PropTypes.bool.isRequired,
     isPlayerOnly: PropTypes.bool.isRequired,
     onKeyPress: PropTypes.func.isRequired,
+    onOpenDataviewerTable: PropTypes.func.isRequired,
+    onOpenDataviewerChart: PropTypes.func.isRequired,
     onSetStageFull: PropTypes.func.isRequired,
     onSetStageLarge: PropTypes.func.isRequired,
     onSetStageSmall: PropTypes.func.isRequired,

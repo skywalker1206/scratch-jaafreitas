@@ -60,9 +60,19 @@
     cursor: pointer;
 }
 
+.stage-dataviewer-button {
+    padding: 0.0625rem;
+    background: $extensions-primary;
+}
+
 .stage-button-icon {
     width: 100%;
     height: 100%;
+}
+
+.stage-dataviewer-button-icon {
+    width: 1.875rem;
+    height: 1.875rem;
 }
 
 [dir="rtl"] .stage-button-icon {
