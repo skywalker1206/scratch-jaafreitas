@@ -26,6 +26,7 @@ import Backpack from '../../containers/backpack.jsx';
 import WebGlModal from '../../containers/webgl-modal.jsx';
 import TipsLibrary from '../../containers/tips-library.jsx';
 import Cards from '../../containers/cards.jsx';
+import Dataviewer from '../../containers/dataviewer.jsx';
 import Alerts from '../../containers/alerts.jsx';
 import DragLayer from '../../containers/drag-layer.jsx';
 import ConnectionModal from '../../containers/connection-modal.jsx';
@@ -66,6 +67,7 @@ const GUIComponent = props => {
         backpackVisible,
         blocksTabVisible,
         cardsVisible,
+        dataviewerVisible,
         canChangeLanguage,
         canCreateNew,
         canEditTitle,
@@ -181,6 +183,9 @@ const GUIComponent = props => {
                 ) : null}
                 {cardsVisible ? (
                     <Cards />
+                ) : null}
+                {dataviewerVisible ? (
+                    <Dataviewer />
                 ) : null}
                 {alertsVisible ? (
                     <Alerts className={styles.alertsContainer} />
@@ -379,6 +384,7 @@ GUIComponent.propTypes = {
     canShare: PropTypes.bool,
     canUseCloud: PropTypes.bool,
     cardsVisible: PropTypes.bool,
+    dataviewerVisible: PropTypes.bool,
     children: PropTypes.node,
     costumeLibraryVisible: PropTypes.bool,
     costumesTabVisible: PropTypes.bool,

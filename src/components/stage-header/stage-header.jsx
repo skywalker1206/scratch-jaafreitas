@@ -65,6 +65,7 @@ const StageHeaderComponent = function (props) {
         isFullScreen,
         isPlayerOnly,
         onKeyPress,
+        dataviewerVisible,
         onOpenDataviewerTable,
         onOpenDataviewerChart,
         onSetStageLarge,
@@ -145,9 +146,10 @@ const StageHeaderComponent = function (props) {
                         className={classNames(
                             styles.stageButton,
                             styles.stageButtonLast,
-                            styles.stageDataviewerButton
+                            styles.stageDataviewerButton,
+                            dataviewerVisible ? styles.stageDataviewerButtonOff : null
                         )}
-                        onClick={onOpenDataviewerChart}
+                        onClick={dataviewerVisible ? null : onOpenDataviewerChart}
                     >
                         <img
                             alt={props.intl.formatMessage(messages.dataviewerChart)}
@@ -233,7 +235,8 @@ const StageHeaderComponent = function (props) {
 
 const mapStateToProps = state => ({
     // This is the button's mode, as opposed to the actual current state
-    stageSizeMode: state.scratchGui.stageSize.stageSize
+    stageSizeMode: state.scratchGui.stageSize.stageSize,
+    dataviewerVisible: state.scratchGui.dataviewer.visible
 });
 
 StageHeaderComponent.propTypes = {
@@ -241,6 +244,7 @@ StageHeaderComponent.propTypes = {
     isFullScreen: PropTypes.bool.isRequired,
     isPlayerOnly: PropTypes.bool.isRequired,
     onKeyPress: PropTypes.func.isRequired,
+    dataviewerVisible: PropTypes.bool.isRequired,
     onOpenDataviewerTable: PropTypes.func.isRequired,
     onOpenDataviewerChart: PropTypes.func.isRequired,
     onSetStageFull: PropTypes.func.isRequired,

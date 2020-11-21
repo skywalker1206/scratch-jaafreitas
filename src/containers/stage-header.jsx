@@ -5,6 +5,7 @@ import VM from 'scratch-vm';
 import {STAGE_SIZE_MODES} from '../lib/layout-constants';
 import {setStageSize} from '../reducers/stage-size';
 import {setFullScreen} from '../reducers/mode';
+import {viewChart} from '../reducers/dataviewer';
 
 import {connect} from 'react-redux';
 
@@ -63,7 +64,7 @@ const mapDispatchToProps = dispatch => ({
         console.log('>>>onOpenDataviewerTable');
     },
     onOpenDataviewerChart: () => {
-        console.log('>>>onOpenDataviewerChart');
+        dispatch(viewChart());
     },
     onSetStageLarge: () => dispatch(setStageSize(STAGE_SIZE_MODES.large)),
     onSetStageSmall: () => dispatch(setStageSize(STAGE_SIZE_MODES.small)),

@@ -1,0 +1,131 @@
+@import "../../css/units.css";
+@import "../../css/colors.css";
+@import "../../css/z-index.css";
+
+.chart-container-overlay {
+    position: fixed;
+    pointer-events: none;
+    z-index: $z-index-card;
+}
+
+.chart-container {
+    position:absolute;
+    pointer-events: auto;
+    z-index: $z-index-card;
+    margin: 0.5rem 2rem;
+    min-width: 468px;
+}
+
+.chart {
+    border: 1px solid $ui-tertiary;
+    border-radius: 0.75rem;
+    display: flex;
+    flex-direction: column;
+    cursor: move;
+    z-index: 20;
+    overflow: hidden;
+    box-shadow: 0px 5px 25px 5px $ui-black-transparent;
+    align-items: center;
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
+
+.header-buttons {
+    width: 100%;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    background: $extensions-primary;
+    border-bottom: 1px solid $extensions-tertiary;
+    font-size: 0.625rem;
+    font-weight: bold;
+}
+
+.header-buttons-hidden {
+    border-bottom: 0px;
+}
+
+.header-buttons-right {
+    display: flex;
+    flex-direction: row;
+}
+
+.header-buttons img {
+    margin-bottom: 2px;
+}
+
+.shrink-expand-button {
+    cursor: pointer;
+    color: white;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 0.75rem;
+}
+
+.shrink-expand-button:hover {
+    background-color: $ui-black-transparent;
+}
+
+.remove-button, .dataviewer-button {
+    cursor: pointer;
+    color: white;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 0.75rem;
+}
+
+.remove-button:hover {
+    background-color: $ui-black-transparent;
+}
+
+.dataviewer-button:hover {
+    background-color: $extensions-primary;
+    cursor: move;
+}
+
+.chart-body {
+    width: 100%;
+    background: $ui-white;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    text-align: center;
+
+    /* Min height prevents layout changing when images change */
+    min-height: 256px;
+}
+
+.dataviewer-icon {
+    height: 1.25rem;
+}
+
+.close-icon {
+    height: 1.25rem;
+    margin: .125rem 0; /* To offset the .25rem difference in icon size */
+}
+
+[dir="ltr"] .dataviewer-icon {
+    margin-right: 0.25rem;
+}
+
+[dir="rtl"] .dataviewer-icon {
+    margin-left: 0.25rem;
+}
+
+[dir="ltr"] .close-icon {
+    margin-left: 0.25rem;
+}
+
+[dir="rtl"] .close-icon {
+    margin-right: 0.25rem;
+}
+
+.hidden {
+    display: none;
+}
