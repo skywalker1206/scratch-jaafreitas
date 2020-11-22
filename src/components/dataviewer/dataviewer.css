@@ -92,13 +92,39 @@
     background: $ui-white;
     display: flex;
     flex-direction: column;
-    justify-content: center;
+    /* justify-content: center; */
     align-items: center;
     position: relative;
     text-align: center;
 
     /* Min height prevents layout changing when images change */
-    min-height: 256px;
+    /* min-height: 256px;     */
+
+    /* Enables vertical scroll */
+    height: 256px;
+    overflow-y: auto;
+}
+
+.table-preview {
+    font-size: 0.625rem;
+    margin: 1rem 1rem 1rem 1rem;
+    border-width: 1px;
+    border-style: solid;
+    border-color: lightgray;
+    min-width: 93%;
+    border-spacing: 0px;
+}
+
+.table-preview th {
+    border-width: 1px;
+    border-style: solid;
+    border-color: lightgray;
+}
+
+.table-preview td {
+    border-width: 1px;
+    border-style: solid;
+    border-color: lightgray;
 }
 
 .dataviewer-icon {

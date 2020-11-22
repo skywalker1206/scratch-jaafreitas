@@ -3,6 +3,7 @@ import React from 'react';
 import classNames from 'classnames';
 import {FormattedMessage} from 'react-intl';
 import Draggable from 'react-draggable';
+import VM from 'scratch-vm';
 
 import styles from './dataviewer.css';
 
@@ -73,9 +74,30 @@ DataviewerHeader.propTypes = {
     expanded: PropTypes.bool.isRequired
 };
 
+const DataviewerChart = ({vm}) => {
+    const stage = vm.runtime.getTargetForStage();
+    const stageVariables = stage.getAllVariableNamesInScopeByType('list');
+
+    return (
+        <table className={styles.tablePreview}>
+            <tr><th>List</th><th>Index</th><th>Value</th></tr>{
+                stageVariables.map(variable => (
+                    stage.lookupVariableByNameAndType(variable, 'list', false).value.slice().map((item, idx) => (
+                        <tr key={idx}><td>{variable}</td><td>{idx}</td><td>{item}</td></tr>
+                    ))
+                ))
+            }</table>
+    );
+};
+
+DataviewerChart.propTypes = {
+    vm: PropTypes.instanceOf(VM).isRequired
+};
+
 const Dataviewer = props => {
     const {
         expanded,
+        vm,
         isRtl,
         onCloseChart,
         onShrinkExpandChart,
@@ -131,7 +153,9 @@ const Dataviewer = props => {
                             onShrinkExpandChart={onShrinkExpandChart}
                             expanded={expanded}
                         />
-                        <div className={expanded ? styles.chartBody : styles.hidden} />
+                        <div className={expanded ? styles.chartBody : styles.hidden}>
+                            <DataviewerChart vm={vm} />
+                        </div>
                     </div>
                 </div>
             </Draggable>
@@ -148,7 +172,8 @@ Dataviewer.propTypes = {
     onShrinkExpandChart: PropTypes.func.isRequired,
     onDrag: PropTypes.func,
     onStartDrag: PropTypes.func,
-    onEndDrag: PropTypes.func
+    onEndDrag: PropTypes.func,
+    vm: PropTypes.instanceOf(VM).isRequired
 };
 
 export {

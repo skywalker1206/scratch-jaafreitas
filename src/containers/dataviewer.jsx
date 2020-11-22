@@ -19,7 +19,8 @@ const mapStateToProps = state => ({
     expanded: state.scratchGui.dataviewer.expanded,
     x: state.scratchGui.dataviewer.x,
     y: state.scratchGui.dataviewer.y,
-    isRtl: state.locales.isRtl
+    isRtl: state.locales.isRtl,
+    vm: state.scratchGui.vm
 });
 
 const mapDispatchToProps = dispatch => ({
