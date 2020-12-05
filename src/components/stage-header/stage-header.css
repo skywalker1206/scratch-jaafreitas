@@ -62,7 +62,7 @@
 
 .stage-dataviewer-button {
     padding: 0.0625rem;
-    background: $extensions-primary;
+    background: rgb(10, 186, 181); /* Scratch3DataViewerBlocks.EXTENSION_INFO_COLOR1 */
 }
 
 .stage-dataviewer-button-off {
@@ -72,11 +72,11 @@
 
 .stage-dataviewer-button:hover {
     /* in the middle of extensions-primary and extensions-tertiary */
-    background: hsla(163, 85%, 35%, 1);
+    background: rgb(9,162,157);
 }
 
 .stage-dataviewer-button-off:hover {
-    background: $extensions-primary;
+    background: rgb(10, 186, 181); /* Scratch3DataViewerBlocks.EXTENSION_INFO_COLOR1 */
 }
 
 .stage-button-icon {

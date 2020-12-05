@@ -35,8 +35,8 @@
     flex-direction: row;
     justify-content: space-between;
     align-items: center;
-    background: $extensions-primary;
-    border-bottom: 1px solid $extensions-tertiary;
+    background: rgb(10, 186, 181);
+    border-bottom: 1px solid rgb(7, 138, 134);
     font-size: 0.625rem;
     font-weight: bold;
 }
@@ -83,7 +83,7 @@
 }
 
 .dataviewer-button:hover {
-    background-color: $extensions-primary;
+    background-color: rgb(10, 186, 181);
     cursor: move;
 }
 
