@@ -3,6 +3,10 @@ import {FormattedMessage} from 'react-intl';
 
 // Tutorial thumbnails: Avoid using any text that would need to be
 // translated in thumbnails.
+
+// Dataviewer
+import libraryDataViewer from './thumbnails/data-viewer.jpg';
+
 // Intro
 import libraryIntro from './thumbnails/getting-started.jpg';
 
@@ -63,6 +67,33 @@ import moveArrowKeysThumb from './thumbnails/move-arrow-keys.jpg';
 import spinThumb from './thumbnails/spin.jpg';
 
 export default {
+
+    'dataviewer': {
+        name: 'Create with data',
+        img: libraryDataViewer,
+        tags: ['dataviewer'],
+        steps: [{
+            title: 'Add your data',
+            image: 'addData'
+        }, {
+            title: 'Change the Scale',
+            image: 'mapData'
+        }, {
+            title: 'Read your data',
+            image: 'readData'
+        }, {
+            title: 'Change the color according to the data',
+            image: 'changeColorData'
+        }, {
+            title: 'Add a waiting block',
+            image: 'addWaitData'
+        }, {
+            title: 'Try it out!',
+            image: 'tryData'
+        }
+        ],
+        urlId: 'dataviewer'
+    },
 
     'intro-move-sayhello': {
         name: (

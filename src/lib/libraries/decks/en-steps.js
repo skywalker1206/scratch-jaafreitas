@@ -3,6 +3,14 @@ import introMove from './steps/intro-1-move.en.gif';
 import introSay from './steps/intro-2-say.en.gif';
 import introGreenFlag from './steps/intro-3-green-flag.en.gif';
 
+// Data Viewer
+import addData from './steps/data1.gif';
+import mapData from './steps/data2.gif';
+import readData from './steps/data3.gif';
+import changeColorData from './steps/data4.gif';
+import addWaitData from './steps/data5.gif';
+import tryData from './steps/data6.gif';
+
 // Text to Speech
 import speechAddExtension from './steps/speech-add-extension.en.gif';
 import speechSaySomething from './steps/speech-say-something.en.png';
@@ -204,6 +212,14 @@ const enImages = {
     introMove: introMove,
     introSay: introSay,
     introGreenFlag: introGreenFlag,
+
+    // Data Viewer
+    addData: addData,
+    readData: readData,
+    mapData: mapData,
+    changeColorData: changeColorData,
+    addWaitData: addWaitData,
+    tryData: tryData,
 
     // Text to Speech
     speechAddExtension: speechAddExtension,
