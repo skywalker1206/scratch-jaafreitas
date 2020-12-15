@@ -73,6 +73,8 @@ export default {
         img: libraryDataViewer,
         tags: ['dataviewer'],
         steps: [{
+            video: 'dataviewer'
+        }, {
             title: 'Add your data',
             image: 'dataviewerAddData'
         }, {
@@ -376,7 +378,7 @@ export default {
         ],
         urlId: 'imagine'
     },
-    
+
     'Make-Music': {
         name: (
             <FormattedMessage
@@ -1236,7 +1238,7 @@ export default {
         ],
         urlId: 'code-cartoon'
     },
-    
+
     'cartoon-network': {
         name: (
             <FormattedMessage
