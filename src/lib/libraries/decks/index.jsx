@@ -74,22 +74,22 @@ export default {
         tags: ['dataviewer'],
         steps: [{
             title: 'Add your data',
-            image: 'addData'
+            image: 'dataviewerAddData'
         }, {
-            title: 'Change the Scale',
-            image: 'mapData'
+            title: 'Change the scale',
+            image: 'dataviewerMapData'
         }, {
             title: 'Read your data',
-            image: 'readData'
+            image: 'dataviewerReadData'
         }, {
-            title: 'Change the color according to the data',
-            image: 'changeColorData'
+            title: 'Use your data',
+            image: 'dataviewerUseData'
         }, {
-            title: 'Add a waiting block',
-            image: 'addWaitData'
+            title: 'Add extra blocks',
+            image: 'dataviewerAddExraBlocks'
         }, {
             title: 'Try it out!',
-            image: 'tryData'
+            image: 'dataviewerTryItOut'
         }
         ],
         urlId: 'dataviewer'
