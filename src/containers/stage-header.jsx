@@ -63,9 +63,7 @@ const mapDispatchToProps = dispatch => ({
     onOpenDataviewerTable: () => {
         console.log('>>>onOpenDataviewerTable');
     },
-    onOpenDataviewerChart: () => {
-        dispatch(viewChart());
-    },
+    onOpenDataviewerChart: () => dispatch(viewChart()),
     onSetStageLarge: () => dispatch(setStageSize(STAGE_SIZE_MODES.large)),
     onSetStageSmall: () => dispatch(setStageSize(STAGE_SIZE_MODES.small)),
     onSetStageFull: () => dispatch(setFullScreen(true)),

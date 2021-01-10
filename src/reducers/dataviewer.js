@@ -18,6 +18,7 @@ const reducer = function (state, action) {
     switch (action.type) {
     case VIEW_CHART:
         return Object.assign({}, state, {
+            expanded: true,
             visible: true
         });
     case CLOSE_CHART:
