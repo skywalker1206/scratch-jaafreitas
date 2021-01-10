@@ -5,13 +5,13 @@
 .chart-container-overlay {
     position: fixed;
     pointer-events: none;
-    z-index: $z-index-card;
+    z-index: calc($z-index-card - 1);
 }
 
 .chart-container {
     position:absolute;
     pointer-events: auto;
-    z-index: $z-index-card;
+    z-index: calc($z-index-card - 1);
     margin: 0.5rem 2rem;
     min-width: 468px;
 }
