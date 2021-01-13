@@ -103,6 +103,8 @@ class DataviewerChart extends React.Component {
 
         this._cache = new CellMeasurerCache({
             defaultWidth: 100,
+            defaultHeight: 20,
+            fixedHeight: false,
             fixedWidth: true
         });
     }
@@ -138,13 +140,16 @@ class DataviewerChart extends React.Component {
 
     // Based on scratch3_dataviewer > _getMaxDataLengthReadAll
     getMaxListsLength () {
+        let length = 0;
         const items = this.getListVariables();
         const datasets = items.map(item => this.getListById(item.value).value);
-        const length = datasets.reduce((a, b) => {
-            const aLength = a ? a.length : 0;
-            const bLength = b ? b.length : 0;
-            return aLength > bLength ? a : b;
-        }).length;
+        if (datasets.length > 0) {
+            length = datasets.reduce((a, b) => {
+                const aLength = a ? a.length : 0;
+                const bLength = b ? b.length : 0;
+                return aLength > bLength ? a : b;
+            }).length;
+        }
         return length;
     }
 
