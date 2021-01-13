@@ -149,19 +149,24 @@ class DataviewerChart extends React.Component {
     }
 
     getCellValue (columnIndex, rowIndex) {
-        let content;
+        let content = 'error';
         if (columnIndex === 0 && rowIndex === 0) {
             content = this.props.intl.formatMessage(messages.index);
         } else if (columnIndex > 0 && rowIndex === 0) {
             // Header
             const items = this.getListVariables();
-            content = items[columnIndex - 1].text;
+            const listName = items[columnIndex - 1];
+            if (typeof listName !== 'undefined') {
+                content = listName.text;
+            }
         } else if (columnIndex === 0 && rowIndex > 0) {
             content = rowIndex;
         } else {
             const variableIDName = this.getListVariables()[columnIndex - 1];
-            const variable = this.getListById(variableIDName.value);
-            content = variable.value[rowIndex - 1];
+            if (typeof variableIDName !== 'undefined') {
+                const variable = this.getListById(variableIDName.value);
+                content = variable.value[rowIndex - 1];
+            }
         }
         // content = `${columnIndex},${rowIndex}`;
         return content;
