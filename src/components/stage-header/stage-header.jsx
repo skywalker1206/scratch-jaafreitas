@@ -22,6 +22,8 @@ import unFullScreenIcon from './icon--unfullscreen.svg';
 import scratchLogo from '../menu-bar/scratch-logo.svg';
 import styles from './stage-header.css';
 
+import {ComingSoonTooltip} from '../coming-soon/coming-soon.jsx';
+
 const messages = defineMessages({
     dataviewerTable: {
         defaultMessage: 'Dataviewer Table',
@@ -128,9 +130,10 @@ const StageHeaderComponent = function (props) {
                         className={classNames(
                             styles.stageButton,
                             styles.stageButtonFirst,
-                            styles.stageDataviewerButton
+                            styles.stageDataviewerButton,
+                            dataviewerVisible ? styles.stageDataviewerButtonOff : null
                         )}
-                        onClick={onOpenDataviewerTable}
+                        onClick={dataviewerVisible ? null : onOpenDataviewerTable}
                     >
                         <img
                             alt={props.intl.formatMessage(messages.dataviewerTable)}
@@ -142,23 +145,26 @@ const StageHeaderComponent = function (props) {
                     </Button>
                 </div>
                 <div>
-                    <Button
-                        className={classNames(
-                            styles.stageButton,
-                            styles.stageButtonLast,
-                            styles.stageDataviewerButton,
-                            dataviewerVisible ? styles.stageDataviewerButtonOff : null
-                        )}
-                        onClick={dataviewerVisible ? null : onOpenDataviewerChart}
+                    <ComingSoonTooltip
+                        place="bottom"
+                        tooltipId="dataviewer-chart"
                     >
-                        <img
-                            alt={props.intl.formatMessage(messages.dataviewerChart)}
-                            className={styles.stageDataviewerButtonIcon}
-                            draggable={false}
-                            src={dataviewerChartIcon}
-                            title={props.intl.formatMessage(messages.dataviewerChart)}
-                        />
-                    </Button>
+                        <Button
+                            className={classNames(
+                                styles.stageButton,
+                                styles.stageButtonLast,
+                                styles.stageDataviewerButton
+                            )}
+                        >
+                            <img
+                                alt={props.intl.formatMessage(messages.dataviewerChart)}
+                                className={styles.stageDataviewerButtonIcon}
+                                draggable={false}
+                                src={dataviewerChartIcon}
+                                title={props.intl.formatMessage(messages.dataviewerChart)}
+                            />
+                        </Button>
+                    </ComingSoonTooltip>
                 </div>
             </div>
         );
