@@ -2,7 +2,7 @@ import PropTypes from 'prop-types';
 import React from 'react';
 import classNames from 'classnames';
 import bindAll from 'lodash.bindall';
-import {FormattedMessage} from 'react-intl';
+import {defineMessages, injectIntl, intlShape, FormattedMessage} from 'react-intl';
 import Draggable from 'react-draggable';
 
 import {MultiGrid, CellMeasurer, CellMeasurerCache} from 'react-virtualized';
@@ -17,6 +17,19 @@ import shrinkIcon from '../cards/icon--shrink.svg';
 import expandIcon from '../cards/icon--expand.svg';
 import closeIcon from '../cards/icon--close.svg';
 
+const messages = defineMessages({
+    dataviewer: {
+        defaultMessage: 'Data Viewer',
+        description: 'Name for the Data Viewer extension',
+        id: 'gui.extension.dataviewer.name'
+    },
+    index: {
+        defaultMessage: 'index',
+        description: 'Index property name',
+        id: 'gui.extension.dataviewer.index'
+    }
+});
+
 const DataviewerHeader = ({onCloseChart, onShrinkExpandChart, expanded}) => (
     <div className={expanded ? styles.headerButtons : classNames(styles.headerButtons, styles.headerButtonsHidden)}>
         <div
@@ -26,11 +39,7 @@ const DataviewerHeader = ({onCloseChart, onShrinkExpandChart, expanded}) => (
                 className={styles.dataviewerIcon}
                 src={dataviewerIcon}
             />
-            <FormattedMessage
-                defaultMessage="Data Viewer"
-                description="Name for the 'Data Viewer' extension"
-                id="gui.extension.dataviewer.name"
-            />
+            <FormattedMessage {...messages.dataviewer} />
         </div>
         <div className={styles.headerButtonsRight}>
             <div
@@ -142,7 +151,7 @@ class DataviewerChart extends React.Component {
     getCellValue (columnIndex, rowIndex) {
         let content;
         if (columnIndex === 0 && rowIndex === 0) {
-            content = 'index';
+            content = this.props.intl.formatMessage(messages.index);
         } else if (columnIndex > 0 && rowIndex === 0) {
             // Header
             const items = this.getListVariables();
@@ -229,13 +238,15 @@ class DataviewerChart extends React.Component {
 }
 
 DataviewerChart.propTypes = {
-    vm: PropTypes.instanceOf(VM).isRequired
+    vm: PropTypes.instanceOf(VM).isRequired,
+    intl: intlShape.isRequired
 };
 
 const Dataviewer = props => {
     const {
         expanded,
         vm,
+        intl,
         isRtl,
         onCloseChart,
         onShrinkExpandChart,
@@ -292,7 +303,10 @@ const Dataviewer = props => {
                             expanded={expanded}
                         />
                         <div className={expanded ? styles.chartBody : styles.hidden}>
-                            <DataviewerChart vm={vm} />
+                            <DataviewerChart
+                                vm={vm}
+                                intl={intl}
+                            />
                         </div>
                     </div>
                 </div>
@@ -311,9 +325,8 @@ Dataviewer.propTypes = {
     onDrag: PropTypes.func,
     onStartDrag: PropTypes.func,
     onEndDrag: PropTypes.func,
-    vm: PropTypes.instanceOf(VM).isRequired
+    vm: PropTypes.instanceOf(VM).isRequired,
+    intl: intlShape.isRequired
 };
 
-export {
-    Dataviewer as default
-};
+export default injectIntl(Dataviewer);
