@@ -1,8 +1,12 @@
 import PropTypes from 'prop-types';
 import React from 'react';
 import classNames from 'classnames';
+import bindAll from 'lodash.bindall';
 import {FormattedMessage} from 'react-intl';
 import Draggable from 'react-draggable';
+
+import {MultiGrid, CellMeasurer, CellMeasurerCache} from 'react-virtualized';
+
 import VM from 'scratch-vm';
 
 import styles from './dataviewer.css';
@@ -74,21 +78,155 @@ DataviewerHeader.propTypes = {
     expanded: PropTypes.bool.isRequired
 };
 
-const DataviewerChart = ({vm}) => {
-    const stage = vm.runtime.getTargetForStage();
-    const stageVariables = stage.getAllVariableNamesInScopeByType('list');
+class DataviewerChart extends React.Component {
+    constructor (props) {
+        super(props);
+        bindAll(this, [
+            'getListVariables',
+            'getListById',
+            'getMaxListsLength',
+            'getCellValue',
+            'cellRenderer'
+        ]);
 
-    return (
-        <table className={styles.tablePreview}>
-            <tr><th>List</th><th>Index</th><th>Value</th></tr>{
-                stageVariables.map(variable => (
-                    stage.lookupVariableByNameAndType(variable, 'list', false).value.slice().map((item, idx) => (
-                        <tr key={idx}><td>{variable}</td><td>{idx}</td><td>{item}</td></tr>
-                    ))
-                ))
-            }</table>
-    );
-};
+        this.state = {
+        };
+
+        this._cache = new CellMeasurerCache({
+            defaultWidth: 100,
+            fixedWidth: true
+        });
+    }
+
+    // Based on scratch3_dataviewer > getDataMenu
+    getListVariables () {
+        const stage = this.props.vm.runtime.getTargetForStage();
+        const items = [];
+        if (stage) {
+            for (const varId in stage.variables) {
+                const currVar = stage.variables[varId];
+                if (currVar.type === 'list') {
+                    items.push(({text: currVar.name, value: currVar.id}));
+                }
+            }
+            items.sort((a, b) => {
+                const _a = a.text.toUpperCase();
+                const _b = b.text.toUpperCase();
+                return _a > _b ? 1 : -1;
+            });
+        }
+        return items;
+    }
+
+    // Based on scratch3_dataviewer > _data
+    getListById (varID) {
+        const stage = this.props.vm.runtime.getTargetForStage();
+        if (stage) {
+            const variable = stage.lookupVariableById(varID);
+            return variable;
+        }
+    }
+
+    // Based on scratch3_dataviewer > _getMaxDataLengthReadAll
+    getMaxListsLength () {
+        const items = this.getListVariables();
+        const datasets = items.map(item => this.getListById(item.value).value);
+        const length = datasets.reduce((a, b) => {
+            const aLength = a ? a.length : 0;
+            const bLength = b ? b.length : 0;
+            return aLength > bLength ? a : b;
+        }).length;
+        return length;
+    }
+
+    getCellValue (columnIndex, rowIndex) {
+        let content;
+        if (columnIndex === 0 && rowIndex === 0) {
+            content = 'index';
+        } else if (columnIndex > 0 && rowIndex === 0) {
+            // Header
+            const items = this.getListVariables();
+            content = items[columnIndex - 1].text;
+        } else if (columnIndex === 0 && rowIndex > 0) {
+            content = rowIndex;
+        } else {
+            const variableIDName = this.getListVariables()[columnIndex - 1];
+            const variable = this.getListById(variableIDName.value);
+            content = variable.value[rowIndex - 1];
+        }
+        // content = `${columnIndex},${rowIndex}`;
+        return content;
+    }
+
+    cellRenderer ({columnIndex, key, parent, rowIndex, style}) {
+        const content = this.getCellValue(columnIndex, rowIndex, style);
+        return (
+            <CellMeasurer
+                cache={this._cache}
+                columnIndex={columnIndex}
+                key={key}
+                parent={parent}
+                rowIndex={rowIndex}
+            >
+                <div
+                    className={styles.gridCell}
+                    style={{
+                        ...style,
+                        width: '100'
+                    }}
+                >
+                    {content}
+                </div>
+            </CellMeasurer>
+        );
+    }
+
+    render () {
+        const columnCount = this.getListVariables().length + 1;
+        const rowCount = this.getMaxListsLength() + 1;
+
+        const style = {
+            border: '1px solid lightgray',
+            margin: '1rem 1rem 1rem 1rem'
+        };
+
+        return (
+            <MultiGrid
+                {...this.state}
+                fixedColumnCount={1}
+                fixedRowCount={1}
+                className={styles.grid}
+                cellRenderer={this.cellRenderer}
+
+                columnCount={columnCount}
+                rowCount={rowCount}
+
+                height={224}
+                width={434}
+
+                rowHeight={this._cache.rowHeight}
+
+                columnWidth={100}
+                deferredMeasurementCache={this._cache}
+
+                overscanColumnCount={2}
+                overscanRowCount={10}
+
+                enableFixedColumnScroll
+                enableFixedRowScroll
+                hideTopRightGridScrollbar
+                hideBottomLeftGridScrollbar
+
+                style={style}
+
+                classNameBottomLeftGrid={styles.gridBottomLeft}
+                classNameBottomRightGrid={styles.gridBottomRight}
+                classNameTopLeftGrid={styles.gridTopLeft}
+                classNameTopRightGrid={styles.gridTopRight}
+            />
+        );
+    }
+}
 
 DataviewerChart.propTypes = {
     vm: PropTypes.instanceOf(VM).isRequired

@@ -103,9 +103,13 @@
     /* Enables vertical scroll */
     height: 256px;
     overflow-y: auto;
+
+    font-size: 0.625rem;
+    text-shadow: transparent 0px 0px 0px, rgba(0,0,0,0.5) 0px 0px 0px !important;
 }
 
-.table-preview {
+
+.grid {
     font-size: 0.625rem;
     margin: 1rem 1rem 1rem 1rem;
     border-width: 1px;
@@ -115,16 +119,37 @@
     border-spacing: 0px;
 }
 
-.table-preview th {
+.grid-cell {
     border-width: 1px;
     border-style: solid;
     border-color: lightgray;
+    line-height: 18px;
+    min-height: 18px;
+    width: 100px;
 }
 
-.table-preview td {
-    border-width: 1px;
-    border-style: solid;
-    border-color: lightgray;
+
+.grid-bottom-right {
+    border-right: 2px solid lightgray;
+}
+
+.grid-top-right {
+    border-bottom: 2px solid lightgray;
+    background-color: #f9f9f9;
+    font-weight: bold;
+}
+
+.grid-bottom-left {
+    border-right: 2px solid lightgray;
+    background-color: #f9f9f9;
+    font-weight: bold;
+}
+
+.grid-top-left {
+    border-bottom: 2px solid lightgray;
+    border-right: 2px solid lightgray;
+    background-color: #f9f9f9;
+    font-weight: bold;
 }
 
 .dataviewer-icon {
