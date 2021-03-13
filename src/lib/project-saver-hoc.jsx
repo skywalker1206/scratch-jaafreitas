@@ -138,8 +138,6 @@ const ProjectSaverHOC = function (WrappedComponent) {
             }
         }
         scheduleAutoSave () {
-            this.props.vm.timeline[Date.now()] = this.props.vm.serializeProject();
-            this.props.onSetProjectUnchanged();
             if (this.props.isShowingSaveable && this.props.autoSaveTimeoutId === null) {
                 const timeoutId = setTimeout(this.tryToAutoSave,
                     this.props.autoSaveIntervalSecs * 1000);
