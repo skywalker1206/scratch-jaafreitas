@@ -267,6 +267,11 @@ const Dataviewer = props => {
     } = props;
     let {x, y} = posProps;
 
+    const onCloseChartTimeline = () => {
+        vm.emit('closeDataviewerTable*');
+        onCloseChart();
+    };
+
     // Draggable windows need to calculate their own dragging bounds
     // to allow for dragging them  off the left, right and bottom
     // edges of the workspace.
@@ -308,7 +313,8 @@ const Dataviewer = props => {
                 <div className={styles.chartContainer}>
                     <div className={styles.chart}>
                         <DataviewerHeader
-                            onCloseChart={onCloseChart}
+                            // eslint-disable-next-line react/jsx-no-bind
+                            onCloseChart={onCloseChartTimeline}
                             onShrinkExpandChart={onShrinkExpandChart}
                             expanded={expanded}
                         />

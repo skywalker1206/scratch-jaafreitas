@@ -79,6 +79,11 @@ const StageHeaderComponent = function (props) {
         vm
     } = props;
 
+    const onOpenDataviewerTableTimeLine = () => {
+        vm.emit('openDataviewerTable*');
+        onOpenDataviewerTable();
+    };
+
     let header = null;
 
     if (isFullScreen) {
@@ -133,7 +138,7 @@ const StageHeaderComponent = function (props) {
                             styles.stageDataviewerButton,
                             dataviewerVisible ? styles.stageDataviewerButtonOff : null
                         )}
-                        onClick={dataviewerVisible ? null : onOpenDataviewerTable}
+                        onClick={dataviewerVisible ? null : onOpenDataviewerTableTimeLine}
                     >
                         <img
                             alt={props.intl.formatMessage(messages.dataviewerTable)}
