@@ -149,7 +149,7 @@ const StageHeaderComponent = function (props) {
                         />
                     </Button>
                 </div>
-                <div>
+                <div style={{display: 'none'}} >
                     <ComingSoonTooltip
                         place="bottom"
                         tooltipId="dataviewer-chart"
