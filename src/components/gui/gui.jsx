@@ -305,7 +305,7 @@ const GUIComponent = props => {
                                             canUseCloud={canUseCloud}
                                             grow={1}
                                             isVisible={blocksTabVisible}
-                                            preLoadedExtensions={['dataviewer']}
+                                            preLoadedExtensions={['pen', 'dataviewer']}
                                             options={{
                                                 media: `${basePath}static/blocks-media/`
                                             }}

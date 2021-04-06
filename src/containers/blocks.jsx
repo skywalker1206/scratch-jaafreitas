@@ -147,11 +147,12 @@ class Blocks extends React.Component {
                     this.props.vm.extensionManager.loadExtensionURL(extension)
                 ), 1000
             );
-            // Select the category of the first loaded extension.
+            // Select the category of the last loaded extension.
             window.setTimeout(() => {
                 if (this.props.preLoadedExtensions.length > 0) {
                     this.withToolboxUpdates(() => {
-                        this.workspace.toolbox_.setSelectedCategoryById(this.props.preLoadedExtensions[0]);
+                        this.workspace.toolbox_.setSelectedCategoryById(
+                            this.props.preLoadedExtensions[this.props.preLoadedExtensions.length - 1]);
                     });
                 }
             }, 2000);
