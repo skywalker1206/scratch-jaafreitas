@@ -122,11 +122,6 @@ class DataviewerChart extends React.Component {
                     }
                 }
             }
-            items.sort((a, b) => {
-                const _a = a.text.toUpperCase();
-                const _b = b.text.toUpperCase();
-                return _a > _b ? 1 : -1;
-            });
         }
         return items;
     }
