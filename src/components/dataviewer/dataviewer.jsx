@@ -117,7 +117,9 @@ class DataviewerChart extends React.Component {
             for (const varId in stage.variables) {
                 const currVar = stage.variables[varId];
                 if (currVar.type === 'list') {
-                    items.push(({text: currVar.name, value: currVar.id}));
+                    if (currVar.value.length > 0) {
+                        items.push(({text: currVar.name, value: currVar.id}));
+                    }
                 }
             }
             items.sort((a, b) => {
