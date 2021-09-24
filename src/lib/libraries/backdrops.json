@@ -1,5 +1,17 @@
 [
     {
+        "name": "World map",
+        "tags": [
+            "dataviewer"
+        ],
+        "assetId": "87d3483d21504d2bb412fbd73a58636a",
+        "bitmapResolution": 2,
+        "dataFormat": "png",
+        "md5ext": "87d3483d21504d2bb412fbd73a58636a.png",
+        "rotationCenterX": 368,
+        "rotationCenterY": 214
+    },
+    {
         "name": "Arctic",
         "tags": [
             "outdoors",
